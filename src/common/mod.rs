@@ -1,13 +1,46 @@
 /*
 Common features shared between the different components of the compiler
 */
-enum Token {
-    Id(String),
+pub enum Token {
+    // Meta Control Tokens
+    EOL, // End of line
+    EOF, // End of line
+    INVAL, // Invalid token
     // Keywords
     While,
     If,
     Else,
     IntKey,
     Ret,
-    Op(char), // Any operator, or in c standard terms, any punctuator
+    // Value tokens
+    Id(String),
+    IntConst(i32),
+    // Operators
+    LCurly, // {
+    RCurly, // }
+    LParen, // (
+    RParen, // )
+    LBrack, // [
+    RBrack, // ]
+    Semi, // ;
+    Colon, // :
+
+    Add, // +
+    Inc, // ++
+    AddAss, // +=
+              
+    Sub, // -
+    Dec, // --
+    SubAss, // -= 
+
+    Star, // *
+    MulAss, // *=
+    Div, // /
+    DivAss, // /=
+    Assign, // =
+    Equal, // ==
+    GT, // >
+    GE, // >=
+    LT, // <
+    LE, // <=
 }

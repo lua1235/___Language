@@ -3,10 +3,10 @@ use std::io;
 use std::io::BufReader;
 use std::env;
 
-mod utils;
+mod common;
 mod scanner;
 
-fn main() -> std::io::Result<()> {
+fn main() -> io::Result<()> {
     let filepath = parse_args(env::args());
     let file = File::open(filepath)?;
     let mut reader = BufReader::new(file);
