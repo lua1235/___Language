@@ -1,6 +1,7 @@
 /*
 Common features shared between the different components of the compiler
 */
+#[derive(Debug)]
 pub enum Token {
     // Meta Control Tokens
     EOL, // End of line
@@ -24,6 +25,7 @@ pub enum Token {
     RBrack, // ]
     Semi, // ;
     Colon, // :
+    Comma, // ,
 
     Add, // +
     Inc, // ++
@@ -35,12 +37,20 @@ pub enum Token {
 
     Star, // *
     MulAss, // *=
+
     Div, // /
     DivAss, // /=
+
+
     Assign, // =
     Equal, // ==
+           
+    Not, // !
+    NotEq, // !=
+
     GT, // >
     GE, // >=
+
     LT, // <
     LE, // <=
 }
