@@ -5,8 +5,8 @@ use std::env;
 
 use scanner::Scanner;
 
-mod common;
 mod scanner;
+mod parser;
 
 fn main() -> io::Result<()> {
     let filepath = parse_args(env::args());
@@ -14,7 +14,7 @@ fn main() -> io::Result<()> {
     let reader = BufReader::new(file);
     let mut scanner = Scanner::new();
     scanner.scan(&mut reader.lines());
-    for tok in scanner.get_token_iter() {
+    for tok in scanner.get_tokens() {
         println!("{tok:?}");
     }
     Ok(())

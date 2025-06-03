@@ -1,8 +1,11 @@
-use crate::common::Token;
 use std::io::{BufRead, Lines};
 use std::iter::Peekable;
 use std::slice::Iter;
 use std::str::Chars;
+
+use token::Token;
+
+pub mod token;
 
 pub struct Scanner {
     tokens : Vec<Token>,
@@ -15,9 +18,9 @@ impl Scanner {
         }
     }
 
-    // Return an iterator to the underlying vector of tokens
-    pub fn get_token_iter(&self) -> Iter<Token> {
-        self.tokens.iter()
+    // Return a reference to the underlying vector of tokens
+    pub fn get_tokens(&self) -> &Vec<Token> {
+        &self.tokens
     }
 
     // Scan the input character by character, and produce tokens
