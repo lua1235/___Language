@@ -10,11 +10,11 @@ struct Parser<'a> {
     ast_head : Box<Node>
 }
 
-impl Parser {
+impl Parser<'_> {
     pub fn new(tokens : & Vec<Token>) -> Self {
         Self {
             tokens : tokens,
-            ast_head : Box::new(Node::Prog),
+            ast_head : Box::new(Node::Empty),
         }
     }
 
@@ -28,10 +28,10 @@ impl Parser {
         // been fully parsed into a single ast.
         let left = if let Some(x) = tok_it.next() {
             match x {
-                Token::EOF => Box::new(Node::Prog),
+                Token::EOF => Box::new(Node::Empty),
                 Token::IntConst(i) => Box::new(Node::Int(*i)),
                 Token::Id(s) => Box::new(Node::Id{
-                                name : s,
+                                name : s.to_string(),
                                 val_type : Token::IntKey, // Placeholder, need lookup table
                             }),
                 x => panic!("Bad token {x:?}"),
@@ -49,6 +49,7 @@ impl Parser {
             if let Token::EOF = op {
                 break
             }
+            let (lbp, rbp) = self.get_binding_powers(op);
             
 
 
@@ -59,7 +60,7 @@ impl Parser {
 
     // Return the left and right binding powers of an infix operator. Different precedence levels
     // correspond to even binding power values. Odd values are used to represent associativity
-    fn get_binding_powers(tok : & Token) -> (u32, u32) {
+    fn get_binding_powers(& self, tok : & Token) -> (u32, u32) {
         match tok {
             // Treat semicolons as a left associative infix operator which joins expressions
             Token::Semi => (0, 1),
@@ -68,10 +69,11 @@ impl Parser {
                 | Token::SubAss 
                 | Token::MulAss 
                 | Token::DivAss => (5, 4), // Right assoc
-            Token::Equal | Token::NotEq => (18, 19)
-            Token::GT | Token::GE | Token::LT | Token::LE => (20, 21)
+            Token::Equal | Token::NotEq => (18, 19),
+            Token::GT | Token::GE | Token::LT | Token::LE => (20, 21),
             Token::Add | Token::Sub => (24, 25),
             Token::Star | Token::Div => (26, 27),
+            _ => panic!("Bad operator token {tok:?}"),
         }
     }
 
