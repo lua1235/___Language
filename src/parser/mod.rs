@@ -17,11 +17,11 @@ impl Parser {
     }
 
     pub fn gen_ast(&mut self, tokens : & Vec<Token>) {
-        self.ast_head = self.parse(&mut tokens.iter().peekable(), 0);
+        self.ast_head = self.parse(&mut tokens.iter(), 0);
     }
 
     // This parser uses pratt parsing, which works somewhat similarly to recursive descent. 
-    fn parse(& self, tok_it : &mut Peekable<Iter<Token>>, min_bp : u32) -> Box<Node> {
+    fn parse(& self, tok_it : &mut Iter<Token>, min_bp : u32) -> Box<Node> {
         // Invariant: The left of the current position of the parser in the token stream has
         // been fully parsed into a single ast.
         let mut left = match tok_it.next() {
@@ -40,7 +40,8 @@ impl Parser {
         // will join the current left sub tree with A new, recursively calculated right subtree. 
         // We also advance the iterator past the right subtree, and set the tree with this operator as root.
         loop {
-            let Some(op) = tok_it.peek() else {
+            let mut lookahead = tok_it.clone();
+            let Some(op) = lookahead.next() else {
                 panic!("Bad token stream: End reached without finding Token::EOF")
             };
             if let Token::EOF = op {
