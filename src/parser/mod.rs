@@ -39,32 +39,29 @@ impl Parser {
         // Each iteration, the iterator is positioned at an (infix) operator which 
         // will join the current left sub tree with A new, recursively calculated right subtree. 
         // We also advance the iterator past the right subtree, and set the tree with this operator as root.
-        loop {
-            let mut lookahead = tok_it.clone();
-            let Some(op) = lookahead.next() else {
-                panic!("Bad token stream: End reached without finding Token::EOF")
-            };
+        let mut lookahead = tok_it.clone();
+        while let Some(op) = lookahead.next() {
             if let Token::EOF = op {
-                break
+                return left;
             }
             // Return the binding power if op 
             let (lbp, rbp) = self.get_binding_powers(op);
             // The subtree to the left of this is more strongly attracted to the previous operator
             if lbp < min_bp {
-                break
+                return left;
             }
+            // Advance the main iterator once we are sure we will consume this token
             tok_it.next();
             // Calculate the right subtree
             let right = self.parse(tok_it, rbp);
             left = Box::new(Node::InfixOp {
-                op_type : **op,
+                op_type : op.clone(), // This is fast enough for tokens
                 lhs : left,
                 rhs : right,
             })
 
         }
-        // Return left, which is now the 
-        left
+        panic!("Bad token stream: end reached without encountering Token::EOF");
     }
 
     // Return the left and right binding powers of an infix operator. Different precedence levels

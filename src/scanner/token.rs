@@ -1,7 +1,7 @@
 /*
 Common features shared between the different components of the compiler
 */
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Token {
     // Meta Control Tokens
     EOL, // End of line
