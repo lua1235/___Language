@@ -5,13 +5,15 @@ use crate::scanner::token::Token;
 mod ast;
 
 pub struct Parser {
-    ast_head : Box<Node>
+    ast_head : Box<Node>,
+    open_paren : u32, // Used to match brackets. 
 }
 
 impl Parser {
     pub fn new() -> Self {
         Self {
             ast_head : Box::new(Node::Empty),
+            open_paren : 0,
         }
     }
 
@@ -24,7 +26,7 @@ impl Parser {
     }
 
     // This parser uses pratt parsing, which works somewhat similarly to recursive descent. 
-    fn parse<'a, T : Iterator<Item=&'a Token>>(& self, tok_it : &mut Peekable<T>, min_bp : u32) -> Box<Node> {
+    fn parse<'a, T : Iterator<Item=&'a Token>>(&mut self, tok_it : &mut Peekable<T>, min_bp : u32) -> Box<Node> {
         // Invariant: The left of the current position of the parser in the token stream has
         // been fully parsed into a single ast.
         let mut left = match tok_it.next() {
@@ -36,6 +38,10 @@ impl Parser {
                                 name : s.to_string(),
                                 val_type : Token::IntKey, // Placeholder, need lookup table
                             }),
+                Token::LParen => {
+                    self.open_paren += 1;
+                    self.parse(tok_it, 0)
+                },
                 x => panic!("Bad token {x:?}"),
             }
         };
@@ -47,8 +53,10 @@ impl Parser {
             if let Token::EOF = *op {
                 return left;
             }
-            // Return the binding power if op 
-            let (lbp, rbp) = self.get_binding_powers(op);
+            // Return the binding power, or return if a close-bracket is detected
+            let Some((lbp, rbp)) = self.get_infix_binding_powers(op) else {
+                return left;
+            };
             // The subtree to the left of this is more strongly attracted to the previous operator
             if lbp < min_bp {
                 return left;
@@ -75,8 +83,9 @@ impl Parser {
 
     // Return the left and right binding powers of an infix operator. Different precedence levels
     // correspond to even binding power values. Odd values are used to represent associativity
-    fn get_binding_powers(& self, tok : & Token) -> (u32, u32) {
-        match tok {
+    fn get_infix_binding_powers(&mut self, tok : & Token) -> Option<(u32, u32)> {
+
+        let ret = match tok {
             // Treat semicolons as a left associative infix operator which joins expressions
             Token::Semi => (0, 1),
             Token::Assign 
@@ -88,8 +97,13 @@ impl Parser {
             Token::GT | Token::GE | Token::LT | Token::LE => (20, 21),
             Token::Add | Token::Sub => (24, 25),
             Token::Star | Token::Div => (26, 27),
-            _ => panic!("Bad operator token {tok:?}"),
-        }
+            Token::RParen => {
+                self.open_paren -= 1;
+                return None
+            }, // This  
+            _ => panic!("Bad binary operator"),
+        };
+        Some(ret)
     }
 
 }
