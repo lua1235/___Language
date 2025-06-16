@@ -1,11 +1,10 @@
-use std::{iter::Peekable, slice::Iter};
-
+use std::iter::Peekable;
 use ast::Node;
 use crate::scanner::token::Token;
 
 mod ast;
 
-struct Parser {
+pub struct Parser {
     ast_head : Box<Node>
 }
 
@@ -17,17 +16,21 @@ impl Parser {
     }
 
     pub fn gen_ast(&mut self, tokens : & Vec<Token>) {
-        self.ast_head = self.parse(&mut tokens.iter(), 0);
+        self.ast_head = self.parse(&mut tokens.iter().peekable(), 0);
+    }
+
+    pub fn print_ast(&mut self) {
+        println!("{}", *self.ast_head);
     }
 
     // This parser uses pratt parsing, which works somewhat similarly to recursive descent. 
-    fn parse(& self, tok_it : &mut Iter<Token>, min_bp : u32) -> Box<Node> {
+    fn parse<'a, T : Iterator<Item=&'a Token>>(& self, tok_it : &mut Peekable<T>, min_bp : u32) -> Box<Node> {
         // Invariant: The left of the current position of the parser in the token stream has
         // been fully parsed into a single ast.
         let mut left = match tok_it.next() {
             None => panic!("Error, empty token stream"),
             Some(x) => match x {
-                Token::EOF => Box::new(Node::Empty),
+                Token::EOF => return Box::new(Node::Empty),
                 Token::IntConst(i) => Box::new(Node::Int(*i)),
                 Token::Id(s) => Box::new(Node::Id{
                                 name : s.to_string(),
@@ -39,9 +42,9 @@ impl Parser {
         // Each iteration, the iterator is positioned at an (infix) operator which 
         // will join the current left sub tree with A new, recursively calculated right subtree. 
         // We also advance the iterator past the right subtree, and set the tree with this operator as root.
-        let mut lookahead = tok_it.clone();
-        while let Some(op) = lookahead.next() {
-            if let Token::EOF = op {
+        // let mut lookahead = tok_it.clone();
+        while let Some(op) = tok_it.peek().cloned() {
+            if let Token::EOF = *op {
                 return left;
             }
             // Return the binding power if op 
@@ -54,12 +57,18 @@ impl Parser {
             tok_it.next();
             // Calculate the right subtree
             let right = self.parse(tok_it, rbp);
+            if let Node::Empty = *right {
+                return Box::new(Node::InfixOp {
+                    op_type : op.clone(), // This is fast enough for tokens
+                    lhs : left,
+                    rhs : right,
+                })
+            }
             left = Box::new(Node::InfixOp {
                 op_type : op.clone(), // This is fast enough for tokens
                 lhs : left,
                 rhs : right,
-            })
-
+            });
         }
         panic!("Bad token stream: end reached without encountering Token::EOF");
     }

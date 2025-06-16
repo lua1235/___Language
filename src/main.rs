@@ -4,6 +4,7 @@ use std::io::BufReader;
 use std::env;
 
 use scanner::Scanner;
+use parser::Parser;
 
 mod scanner;
 mod parser;
@@ -17,6 +18,9 @@ fn main() -> io::Result<()> {
     for tok in scanner.get_tokens() {
         println!("{tok:?}");
     }
+    let mut parser = Parser::new();
+    parser.gen_ast(scanner.get_tokens());
+    parser.print_ast();
     Ok(())
 }
 
