@@ -13,6 +13,10 @@ pub enum Node {
         op_type : Token,
         lhs : Box<Node>,
         rhs : Box<Node>
+    },
+    PrefixOp {
+        op_type : Token,
+        rhs : Box<Node>
     }
 }
 
@@ -24,6 +28,7 @@ impl Display for Node {
             Node::Int(val) => write!(f, "{}", val),
             Node::Id { name, val_type } => write!(f, "{}", name),
             Node::InfixOp { op_type, lhs, rhs} => write!(f, "({:?} {} {})", op_type, lhs, rhs),
+            Node::PrefixOp {op_type, rhs} => write!(f, "({:?} {})", op_type, rhs)
         }
     }
 }

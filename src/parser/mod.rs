@@ -25,28 +25,39 @@ impl Parser {
         println!("{}", *self.ast_head);
     }
 
-    // This parser uses pratt parsing, which works somewhat similarly to recursive descent. 
+    // This parser uses pratt parsing, which works somewhat similarly to recursive descent. It will
+    // automatically stop when it encounters a right brace, paren, or bracket
     fn parse<'a, T : Iterator<Item=&'a Token>>(&mut self, tok_it : &mut Peekable<T>, min_bp : u32) -> Box<Node> {
         // Invariant: The left of the current position of the parser in the token stream has
         // been fully parsed into a single ast.
-        let mut left = match tok_it.next() {
-            None => panic!("Error, empty token stream"),
-            Some(x) => match x {
-                Token::EOF => return Box::new(Node::Empty),
-                Token::IntConst(i) => Box::new(Node::Int(*i)),
-                Token::Id(s) => Box::new(Node::Id{
-                                name : s.to_string(),
-                                val_type : Token::IntKey, // Placeholder, need lookup table
-                            }),
-                Token::LParen => {
-                    self.open_paren += 1;
-                    self.parse(tok_it, 0)
-                },
-                x => panic!("Bad token {x:?}"),
-            }
+        let Some(x) = tok_it.next() else {
+            panic!("Error, empty token stream")
+        };
+        let mut left = match x {
+            Token::EOF => return Box::new(Node::Empty),
+            Token::IntConst(i) => Box::new(Node::Int(*i)),
+            Token::Id(s) => Box::new(Node::Id{
+                name : s.to_string(),
+                val_type : Token::IntKey, // Placeholder, need lookup table 
+            }),
+            Token::LParen => {
+                self.open_paren += 1;
+                // Parse the inside of the paren
+                self.parse(tok_it, 0)
+            },
+            // Check if is prefix operator. 
+            op => {
+                let Some(((), rbp)) = self.get_prefix_binding_powers(op) else {
+                    panic!("Error, bad prefix operator")
+                };
+                Box::new(Node::PrefixOp{
+                    op_type : op.clone(),
+                    rhs : self.parse(tok_it, rbp)
+                })
+            },
         };
         // Each iteration, the iterator is positioned at an (infix) operator which 
-        // will join the current left sub tree with A new, recursively calculated right subtree. 
+        // will join the current left sub tree with a new, recursively calculated right subtree. 
         // We also advance the iterator past the right subtree, and set the tree with this operator as root.
         // let mut lookahead = tok_it.clone();
         while let Some(op) = tok_it.peek().cloned() {
@@ -55,6 +66,7 @@ impl Parser {
             }
             // Return the binding power, or return if a close-bracket is detected
             let Some((lbp, rbp)) = self.get_infix_binding_powers(op) else {
+                tok_it.next(); // Consume the close-bracket
                 return left;
             };
             // The subtree to the left of this is more strongly attracted to the previous operator
@@ -65,20 +77,27 @@ impl Parser {
             tok_it.next();
             // Calculate the right subtree
             let right = self.parse(tok_it, rbp);
+            let mut end = false;
             if let Node::Empty = *right {
-                return Box::new(Node::InfixOp {
-                    op_type : op.clone(), // This is fast enough for tokens
-                    lhs : left,
-                    rhs : right,
-                })
+                end = true;
             }
             left = Box::new(Node::InfixOp {
                 op_type : op.clone(), // This is fast enough for tokens
                 lhs : left,
                 rhs : right,
             });
+            if end {
+                return left
+            }
         }
         panic!("Bad token stream: end reached without encountering Token::EOF");
+    }
+    fn get_prefix_binding_powers(&mut self, tok : & Token) -> Option<((), u32)> {
+        let ret = match tok {
+            Token::Inc | Token::Dec => ((), 28),
+            _ => panic!("Bad prefix operator")
+        };
+        Some(ret)
     }
 
     // Return the left and right binding powers of an infix operator. Different precedence levels
@@ -98,6 +117,9 @@ impl Parser {
             Token::Add | Token::Sub => (24, 25),
             Token::Star | Token::Div => (26, 27),
             Token::RParen => {
+                if self.open_paren < 1 {
+                    panic!("Unmatched parenthesis")
+                }
                 self.open_paren -= 1;
                 return None
             }, // This  
