@@ -1,5 +1,5 @@
-# CompilR
-A compiler for a C-based language, written in Rust to learn Rust. The language to be implemented is based heavily on the C standard, with a few "nice" modifications here or there to implement features I enjoy.
+# ___CompilR
+A compiler for the ___ language, written in Rust to learn Rust. The language is designed to share the elegant syntax of C, with a few "nice" modifications here or there to implement features I enjoy.
 
 # Language Features
 ## Nicer Assignment
