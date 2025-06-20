@@ -1,6 +1,5 @@
 use std::io::{BufRead, Lines};
 use std::iter::Peekable;
-use std::slice::Iter;
 use std::str::Chars;
 
 use token::Token;
