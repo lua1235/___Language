@@ -41,12 +41,15 @@ impl Parser {
         if self.eof_read {
             return Box::new(Node::Empty)
         }
-        let Some(x) = tok_it.next() else {
+        let Some(x) = tok_it.peek().cloned() else {
             panic!("Error, empty token stream")
         };
         if *x == *match_tok {
             return Box::new(Node::Empty)
         }
+        // Don't advance if we encountered a match_tok: Instead, return until the parse which
+        // started the match can handle it
+        tok_it.next();
         let mut left = match x {
             // Program-level patterns
             // Encounter the counterpart to an open Token pair
@@ -56,11 +59,15 @@ impl Parser {
             },
             Token::LCurly => { // Start scope
                 self.paren_stack.push(0);
-                todo!()
+                let expr = self.parse(tok_it, 0, &Token::RCurly);
+                let Some(Token::RCurly) = tok_it.next() else {
+                    panic!("Unmatched curly braces")
+                };
+                return Box::new(Node::Block {
+                    statements : expr,
+                    next : self.parse(tok_it, 0, match_tok)
+                });
             },
-            Token::RCurly => { // End scope
-                todo!()
-            }
             // Expression-level patterns
             Token::IntConst(i) => Box::new(Node::Int(*i)),
             Token::Id(s) => Box::new(Node::Id{
@@ -153,7 +160,7 @@ impl Parser {
                 }
                 continue;
             }
-            println!("Close token");
+            println!("Returning on token {:?}", op);
             // If we reach here, it means the token is something we want to ignore
             return left;
         }
