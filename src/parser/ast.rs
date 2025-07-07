@@ -29,26 +29,32 @@ pub enum Node {
     PostfixOp {
         op_type : Token,
         lhs : Box<Node>
+    },
+    Funct {
+        name : String,
+        args : Box<Vec<Node>>
+
     }
 }
 impl Node {
     fn fstr(&self, indent: u32) -> String {
-        let off = 2;
+        let offset = 2;
         let mut s : String = (0..indent).map(|_| " ").collect();
         match self {
             Node::Empty => s.push_str("empty"),
             Node::Int(val) => s.push_str(&val.to_string()),
-            Node::Id { name, val_type :_ } => s.push_str(&name.to_string()),
+            Node::Id { name, val_type : _ } => s.push_str(&name.to_string()),
             Node::Block { statements, next } => s.push_str(
-                &format!("(BLOCK\n{}\n{})", statements.fstr(indent + off), next.fstr(indent + off))),
+                &format!("(BLOCK\n{}\n{})", statements.fstr(indent + offset), next.fstr(indent + offset))),
             Node::Expr {expr, next} => s.push_str(
-                &format!("(EXPR\n{}\n{})", expr.fstr(indent + off), next.fstr(indent + off))),
+                &format!("(EXPR\n{}\n{})", expr.fstr(indent + offset), next.fstr(indent + offset))),
             Node::InfixOp { op_type, lhs, rhs} => s.push_str(
-                &format!("({:?}\n{}\n{})", op_type, lhs.fstr(indent + off), rhs.fstr(indent + off))),
+                &format!("({:?}\n{}\n{})", op_type, lhs.fstr(indent + offset), rhs.fstr(indent + offset))),
             Node::PrefixOp {op_type, rhs} => s.push_str(
-                &format!("({:?}\n{})", op_type, rhs.fstr(indent + off))),
+                &format!("({:?}\n{})", op_type, rhs.fstr(indent + offset))),
             Node::PostfixOp {op_type, lhs} => s.push_str(
-                &format!("({:?}\n{})", op_type, lhs.fstr(indent + off))),
+                &format!("({:?}\n{})", op_type, lhs.fstr(indent + offset))),
+            _ => todo!(),
         }
         s
     }

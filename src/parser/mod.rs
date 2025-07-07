@@ -1,4 +1,4 @@
-use std::iter::Peekable;
+use std::{collections::HashSet, iter::Peekable};
 use ast::Node;
 use crate::scanner::token::Token;
 
@@ -23,9 +23,7 @@ impl Parser {
     }
 
     pub fn gen_ast(&mut self, tokens : & Vec<Token>) {
-        // At there should be no invalid tokens in the stream, so this just means we aren't
-        // matching anything right now
-        self.ast_head = self.parse(&mut tokens.iter().peekable(), 0, &Token::INVAL);
+        self.ast_head = self.parse(&mut tokens.iter().peekable(), 0, &HashSet::new());
     }
 
     pub fn print_ast(&mut self) {
@@ -35,7 +33,7 @@ impl Parser {
     // This parser uses pratt parsing, which works somewhat similarly to recursive descent. It will
     // return the current ast upon encountering the provided match_tok, which cleanly handles
     // matching of brackets and parentheses
-    fn parse<'a, T : Iterator<Item=&'a Token>>(&mut self, tok_it : &mut Peekable<T>, min_bp : u32, match_tok : &Token) -> Box<Node> {
+    fn parse<'a, T : Iterator<Item=&'a Token>>(&mut self, tok_it : &mut Peekable<T>, min_bp : u32, match_tok : &HashSet<Token>) -> Box<Node> {
         // Invariant: The left of the current position of the parser in the token stream has
         // been fully parsed into a single ast.
         if self.eof_read {
@@ -44,7 +42,7 @@ impl Parser {
         let Some(x) = tok_it.peek().cloned() else {
             panic!("Error, empty token stream")
         };
-        if *x == *match_tok {
+        if match_tok.contains(x) {
             return Box::new(Node::Empty)
         }
         // Don't advance if we encountered a match_tok: Instead, return until the parse which
@@ -59,10 +57,18 @@ impl Parser {
             },
             Token::LCurly => { // Start scope
                 self.paren_stack.push(0);
-                let expr = self.parse(tok_it, 0, &Token::RCurly);
+                let mut mt = HashSet::new();
+                mt.insert(Token::RCurly);
+                let expr = self.parse(tok_it, 0, &mt);
                 let Some(Token::RCurly) = tok_it.next() else {
                     panic!("Unmatched curly braces")
                 };
+                let Some(x) = self.paren_stack.pop() else {
+                    panic!("No current stack frame (WTF)")
+                };
+                if x != 0 {
+                    panic!("Unclosed parentheses in current scope")
+                }
                 return Box::new(Node::Block {
                     statements : expr,
                     next : self.parse(tok_it, 0, match_tok)
@@ -77,7 +83,9 @@ impl Parser {
             Token::LParen => {
                 *self.paren_stack.last_mut().unwrap() += 1;
                 // Parse the inside of the paren
-                let l = self.parse(tok_it, 0, &Token::RParen);
+                let mut mt = HashSet::new();
+                mt.insert(Token::RParen);
+                let l = self.parse(tok_it, 0, &mt);
                 // Consume the close bracket
                 let Some(Token::RParen) = tok_it.next() else {
                     panic!("Unmatched open parenthesis")
@@ -87,7 +95,7 @@ impl Parser {
             },
             // Check if is prefix operator. 
             op => {
-                let Some(((), rbp)) = self.get_prefix_bp(op, &match_tok) else {
+                let Some(((), rbp)) = self.get_prefix_bp(op, match_tok) else {
                     panic!("Error, bad prefix operator")
                 };
                 Box::new(Node::PrefixOp{
@@ -112,24 +120,38 @@ impl Parser {
                     return left;
                 }
                 tok_it.next();
-                if let Token::LBrack = op {
-                    self.open_bracks += 1;
-                    let ind = self.parse(tok_it, 0, &Token::RBrack);
-                    let Some(Token::RBrack) = tok_it.next() else {
-                        panic!("Unmatched open bracket")
-                    };
-                    left = Box::new(Node::InfixOp {
+                left = match op {
+                    // Array indexing
+                    Token::LBrack => {
+                        self.open_bracks += 1;
+                        let mut mt = HashSet::new();
+                        mt.insert(Token::RBrack);
+                        let ind = self.parse(tok_it, 0, &mt);
+                        let Some(Token::RBrack) = tok_it.next() else {
+                            panic!("Unmatched open bracket")
+                        };
+                        self.open_bracks -= 1;
+                        Box::new(Node::InfixOp {
+                            op_type : op.clone(),
+                            lhs : left,
+                            rhs : ind
+                        })
+                    },
+                    // Function call
+                    Token::LParen => {
+                        self.open_bracks += 1;
+                        let mut mt = HashSet::new();
+                        mt.insert(Token::RBrack);
+                        while let Some(Token::Comma) = tok_it {
+
+                        }
+
+                    },
+                    _ => Box::new(Node::PostfixOp {
                         op_type : op.clone(),
-                        lhs : left,
-                        rhs : ind
-                    });
-                    self.open_bracks -= 1;
-                    continue;
-                }
-                left = Box::new(Node::PostfixOp {
-                    op_type : op.clone(),
-                    lhs : left
-                });
+                        lhs : left
+                    }),
+                };
                 continue;
             }
             // Get the binding power, or return if a close-bracket is detected
@@ -170,8 +192,8 @@ impl Parser {
         left
     }
 
-    fn get_prefix_bp(&mut self, tok : & Token, end_tok : & Token) -> Option<((), u32)> {
-        if *tok == *end_tok {
+    fn get_prefix_bp(&mut self, tok : & Token, end_tok : & HashSet<Token>) -> Option<((), u32)> {
+        if end_tok.contains(tok) {
             return None;
         }
         let ret = match tok {
@@ -182,12 +204,13 @@ impl Parser {
         Some(ret)
     }
 
-    fn get_postfix_bp(&mut self, tok : & Token, end_tok : & Token) -> Option<(u32, ())> {
-        if *tok == *end_tok {
+    fn get_postfix_bp(&mut self, tok : & Token, end_tok : & HashSet<Token>) -> Option<(u32, ())> {
+        if end_tok.contains(tok) {
             return None;
         }
         let ret = match tok {
             Token::LBrack => (30, ()), // Think of array subscript as an postfix operator
+            Token::LParen => (36, ()), // Function call postfix operator has high precedence
             Token::Inc | Token::Dec => (30, ()),
             _ => return None,
         };
@@ -196,8 +219,8 @@ impl Parser {
 
     // Return the left and right binding powers of an infix operator. Different precedence levels
     // correspond to even binding power values. Odd values are used to represent associativity
-    fn get_infix_bp(&mut self, tok : & Token, end_tok : & Token) -> Option<(u32, u32)> {
-        if *tok == *end_tok {
+    fn get_infix_bp(&mut self, tok : & Token, end_tok : & HashSet<Token>) -> Option<(u32, u32)> {
+        if end_tok.contains(tok) {
             return None;
         }
         let ret = match tok {
