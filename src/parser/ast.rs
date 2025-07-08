@@ -31,9 +31,8 @@ pub enum Node {
         lhs : Box<Node>
     },
     Funct {
-        name : String,
+        name : Box<Node>,
         args : Box<Vec<Node>>
-
     }
 }
 impl Node {
@@ -54,6 +53,13 @@ impl Node {
                 &format!("({:?}\n{})", op_type, rhs.fstr(indent + offset))),
             Node::PostfixOp {op_type, lhs} => s.push_str(
                 &format!("({:?}\n{})", op_type, lhs.fstr(indent + offset))),
+            Node::Funct {name, args} => s.push_str(
+                &format!("({:?}\n{})", 
+                    name.fstr(indent), 
+                    args
+                    .iter()
+                    .map(|x| format!("{}\n", x.fstr(indent)))
+                    .collect::<String>())),
             _ => todo!(),
         }
         s

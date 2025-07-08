@@ -142,9 +142,21 @@ impl Parser {
                         self.open_bracks += 1;
                         let mut mt = HashSet::new();
                         mt.insert(Token::RBrack);
-                        while let Some(Token::Comma) = tok_it {
-
+                        mt.insert(Token::Comma);
+                        let mut args = Box::new(Vec::new());
+                        let mut ai = self.parse(tok_it, 0, &mt);
+                        while let Some(Token::Comma) = tok_it.peek().cloned() {
+                            tok_it.next();
+                            args.push(*ai);
+                            ai = self.parse(tok_it, 0, &mt);
                         }
+                        let Some(Token::RBrack) = tok_it.next() else {
+                            panic!("Unmatched open bracket")
+                        };
+                        Box::new(Node::Funct {
+                            name : left,
+                            args : args
+                        })
 
                     },
                     _ => Box::new(Node::PostfixOp {
