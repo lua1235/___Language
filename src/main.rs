@@ -11,15 +11,15 @@ mod parser;
 
 fn main() -> io::Result<()> {
     let filepath = parse_args(env::args());
-    let file = File::open(filepath)?;
-    let reader = BufReader::new(file);
-    let mut scanner = Scanner::new();
-    scanner.scan(&mut reader.lines());
-    for tok in scanner.get_tokens() {
+    let file = File::open(&filepath)?;
+    let file2 = File::open(&filepath)?;
+    let mut scanner = Scanner::new(file);
+    for tok in scanner.collect::<Vec<_>>() {
         println!("{tok:?}");
     }
+    scanner = Scanner::new(file2);
     let mut parser = Parser::new();
-    parser.gen_ast(scanner.get_tokens());
+    parser.gen_ast(&mut scanner);
     parser.print_ast();
     Ok(())
 }

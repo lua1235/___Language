@@ -1,4 +1,5 @@
-use std::io::{BufRead, Lines};
+use std::collections::VecDeque;
+use std::io::{BufRead, BufReader, Lines, Read};
 use std::iter::Peekable;
 use std::str::Chars;
 
@@ -6,40 +7,55 @@ use token::Token;
 
 pub mod token;
 
-pub struct Scanner {
-    tokens : Vec<Token>,
+pub struct Scanner<T : Read> {
+    tokens : VecDeque<Token>,
+    lines : Lines<BufReader<T>>,
+    pub lnum : u64,
 }
 
-impl Scanner {
-    pub fn new() -> Self {
-        Self {
-            tokens : Vec::new()
-        }
-    }
+impl<T : Read> Iterator for Scanner<T> {
+    type Item = Token;
 
-    // Return a reference to the underlying vector of tokens
-    pub fn get_tokens(&self) -> &Vec<Token> {
-        &self.tokens
-    }
-
-    // Scan the input character by character, and produce tokens
-    pub fn scan<T : BufRead>(&mut self, file : &mut Lines<T>) {
-        for (lnum, line) in file.enumerate() {
-            println!("Line number {lnum:?}");
-            
+    fn next(&mut self) -> Option<Self::Item> {
+        // Fill the token buffer if it is empty
+        if self.tokens.is_empty() {
+            self.lnum += 1;
+            // Scan this line if queue empty
+            let Some(line) = self.lines.next() else {return None};
             let lbuf = match line {
-                Err(e) => panic!("Problem reading file on line {lnum:?}: {e:?}"),
+                Err(e) => panic!("Problem reading file on line {:?}: {:?}", self.lnum, e),
                 Ok(l) => l,
             };
             let mut lpeek = lbuf.chars().peekable();
             loop {
                 match self.read_token(&mut lpeek) {
                     Token::EOL => break, // For now, we just ignore end of line tokens.
-                    other => self.tokens.push(other),
+                    other => self.tokens.push_back(other),
                 }
             }
         }
-        self.tokens.push(Token::EOF);
+        return self.tokens.pop_front()
+    }
+}
+
+impl<T : Read> Scanner<T> {
+    pub fn new(input : T) -> Self {
+        Self {
+            tokens : VecDeque::new(),
+            lnum : 0,
+            lines : BufReader::new(input).lines(),
+        }
+    }
+
+    // Check next token without advancing
+    pub fn peek(&mut self) -> Option<Token> {
+        if let Some(t) = self.next()  {
+            // Don't actually consume an element
+            self.tokens.push_front(t.clone());
+            return Some(t);
+        } else {
+            return None;
+        }
     }
 
     // Check if the identifier matches one of the recognized keywords

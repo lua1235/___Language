@@ -36,31 +36,41 @@ pub enum Node {
     }
 }
 impl Node {
-    fn fstr(&self, indent: u32) -> String {
+    fn fstr(&self, prefix : &mut String, islast : bool) -> String {
         let offset = 2;
-        let mut s : String = (0..indent).map(|_| " ").collect();
+        let mut s = prefix.clone();
+        if islast {
+            s.push_str("┗");
+            prefix.push_str("   ");
+        } else {
+            s.push_str("┣");
+            prefix.push_str("┃  ");
+        }
         match self {
             Node::Empty => s.push_str("empty"),
             Node::Int(val) => s.push_str(&val.to_string()),
             Node::Id { name, val_type : _ } => s.push_str(&name.to_string()),
-            Node::Block { statements, next } => s.push_str(
-                &format!("(BLOCK\n{}\n{})", statements.fstr(indent + offset), next.fstr(indent + offset))),
             Node::Expr {expr, next} => s.push_str(
-                &format!("(EXPR\n{}\n{})", expr.fstr(indent + offset), next.fstr(indent + offset))),
+                &format!("━EXPR\n{}\n{}", expr.fstr(prefix, false), next.fstr(prefix, true))),
             Node::InfixOp { op_type, lhs, rhs} => s.push_str(
-                &format!("({:?}\n{}\n{})", op_type, lhs.fstr(indent + offset), rhs.fstr(indent + offset))),
+                &format!("━{:?}\n{}\n{}", op_type, lhs.fstr(prefix, false), rhs.fstr(prefix, true))),
             Node::PrefixOp {op_type, rhs} => s.push_str(
-                &format!("({:?}\n{})", op_type, rhs.fstr(indent + offset))),
+                &format!("━{:?}\n{}", op_type, rhs.fstr(prefix, true))),
             Node::PostfixOp {op_type, lhs} => s.push_str(
-                &format!("({:?}\n{})", op_type, lhs.fstr(indent + offset))),
+                &format!("━{:?}\n{}", op_type, lhs.fstr(prefix, true))),
+            Node::Block {statements, next} => s.push_str(
+                &format!("━BLOCK\n{}\n{}", statements.fstr(prefix, false), next.fstr(prefix, true))),
             Node::Funct {name, args} => s.push_str(
-                &format!("({:?}\n{})", 
-                    name.fstr(indent), 
+                &format!("━FUNCTION\n{}{}", 
+                    name.fstr(prefix, false), 
                     args
                     .iter()
-                    .map(|x| format!("{}\n", x.fstr(indent)))
+                    .map(|x| format!("\n{}", x.fstr(prefix, false)))
                     .collect::<String>())),
             _ => todo!(),
+        }
+        for _ in 0..3 {
+            prefix.pop();
         }
         s
     }
@@ -69,7 +79,7 @@ impl Node {
 // For now, just printing as reverse polish is enough
 impl Display for Node {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.fstr(0))
+        write!(f, "{}", self.fstr(&mut String::new(), true))
     }
 }
 

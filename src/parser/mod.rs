@@ -1,6 +1,6 @@
-use std::{collections::HashSet, iter::Peekable};
+use std::{collections::HashSet, io::{BufRead, Read}};
 use ast::Node;
-use crate::scanner::token::Token;
+use crate::scanner::{token::Token, Scanner};
 
 mod ast;
 
@@ -22,8 +22,8 @@ impl Parser {
         }
     }
 
-    pub fn gen_ast(&mut self, tokens : & Vec<Token>) {
-        self.ast_head = self.parse(&mut tokens.iter().peekable(), 0, &HashSet::new());
+    pub fn gen_ast<T : Read>(&mut self, tokens : &mut Scanner<T>) {
+        self.ast_head = self.parse(tokens, 0, &HashSet::new());
     }
 
     pub fn print_ast(&mut self) {
@@ -33,16 +33,17 @@ impl Parser {
     // This parser uses pratt parsing, which works somewhat similarly to recursive descent. It will
     // return the current ast upon encountering the provided match_tok, which cleanly handles
     // matching of brackets and parentheses
-    fn parse<'a, T : Iterator<Item=&'a Token>>(&mut self, tok_it : &mut Peekable<T>, min_bp : u32, match_tok : &HashSet<Token>) -> Box<Node> {
+    fn parse<T : Read>(&mut self, tok_it : &mut Scanner<T>, min_bp : u32, match_tok : &HashSet<Token>) -> Box<Node> {
         // Invariant: The left of the current position of the parser in the token stream has
         // been fully parsed into a single ast.
         if self.eof_read {
             return Box::new(Node::Empty)
         }
-        let Some(x) = tok_it.peek().cloned() else {
-            panic!("Error, empty token stream")
+        let Some(x) = tok_it.peek() else {
+            self.eof_read = true;
+            return Box::new(Node::Empty)
         };
-        if match_tok.contains(x) {
+        if match_tok.contains(&x) {
             return Box::new(Node::Empty)
         }
         // Don't advance if we encountered a match_tok: Instead, return until the parse which
@@ -69,13 +70,19 @@ impl Parser {
                 if x != 0 {
                     panic!("Unclosed parentheses in current scope")
                 }
+                let next;
+                if let Some(Token::Semi) = tok_it.peek() {
+                    next = Box::new(Node::Empty);
+                } else {
+                    next = self.parse(tok_it, 0, match_tok);
+                }
                 return Box::new(Node::Block {
                     statements : expr,
-                    next : self.parse(tok_it, 0, match_tok)
+                    next : next,
                 });
             },
             // Expression-level patterns
-            Token::IntConst(i) => Box::new(Node::Int(*i)),
+            Token::IntConst(i) => Box::new(Node::Int(i)),
             Token::Id(s) => Box::new(Node::Id{
                 name : s.to_string(),
                 val_type : Token::IntKey, // Placeholder, need lookup table 
@@ -95,7 +102,7 @@ impl Parser {
             },
             // Check if is prefix operator. 
             op => {
-                let Some(((), rbp)) = self.get_prefix_bp(op, match_tok) else {
+                let Some(((), rbp)) = self.get_prefix_bp(&op, match_tok) else {
                     panic!("Error, bad prefix operator")
                 };
                 Box::new(Node::PrefixOp{
@@ -108,13 +115,9 @@ impl Parser {
         // will join the current left sub tree with a new, recursively calculated right subtree. 
         // We also advance the iterator past the right subtree, and set the tree with this operator as root.
         // let mut lookahead = tok_it.clone();
-        while let Some(op) = tok_it.peek().cloned() {
-            if let Token::EOF = *op {
-                self.eof_read = true;
-                break;
-            }
+        while let Some(op) = tok_it.peek() {
             // First check if it is a postfix operator
-            if let Some((lbp, ())) = self.get_postfix_bp(op, match_tok) {
+            if let Some((lbp, ())) = self.get_postfix_bp(&op, match_tok) {
                 // The subtree to the left of this is more strongly attracted to the previous operator
                 if lbp < min_bp {
                     return left;
@@ -139,20 +142,20 @@ impl Parser {
                     },
                     // Function call
                     Token::LParen => {
-                        self.open_bracks += 1;
                         let mut mt = HashSet::new();
-                        mt.insert(Token::RBrack);
+                        mt.insert(Token::RParen);
                         mt.insert(Token::Comma);
                         let mut args = Box::new(Vec::new());
                         let mut ai = self.parse(tok_it, 0, &mt);
-                        while let Some(Token::Comma) = tok_it.peek().cloned() {
+                        while let Some(Token::Comma) = tok_it.peek() {
                             tok_it.next();
                             args.push(*ai);
                             ai = self.parse(tok_it, 0, &mt);
                         }
-                        let Some(Token::RBrack) = tok_it.next() else {
-                            panic!("Unmatched open bracket")
+                        let Some(Token::RParen) = tok_it.next() else {
+                            panic!("Unmatched open paren")
                         };
+                        args.push(*ai);
                         Box::new(Node::Funct {
                             name : left,
                             args : args
@@ -167,7 +170,7 @@ impl Parser {
                 continue;
             }
             // Get the binding power, or return if a close-bracket is detected
-            if let Some((lbp, rbp)) = self.get_infix_bp(op, match_tok) {
+            if let Some((lbp, rbp)) = self.get_infix_bp(&op, match_tok) {
                 // The subtree to the left of this is more strongly attracted to the previous operator
                 if lbp < min_bp {
                     return left;
@@ -198,9 +201,7 @@ impl Parser {
             // If we reach here, it means the token is something we want to ignore
             return left;
         }
-        if !self.eof_read {
-            panic!("Bad token stream: end reached without encountering Token::EOF");
-        }
+        self.eof_read = true;
         left
     }
 
