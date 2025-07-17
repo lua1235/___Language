@@ -11,7 +11,6 @@ pub enum Node {
     },
     Block { // A block statement , {...} which is a list of statements
         statements : Box<Node>, // Statements within the block
-        next : Box<Node>, // The statement directly following this block
     },
     Id {
         name : String,
@@ -33,17 +32,23 @@ pub enum Node {
     Funct {
         name : Box<Node>,
         args : Box<Vec<Node>>
+    },
+    If {
+        cond : Box<Node>,
+        t_expr : Box<Node>
+        f_expr : Box<Node>
     }
 }
+
 impl Node {
     fn fstr(&self, prefix : &mut String, islast : bool) -> String {
         let offset = 2;
         let mut s = prefix.clone();
-        if islast {
-            s.push_str("┗");
+        if let Node::Expr {expr: _, next: _} = self {} else if islast {
+            s.push('┗');
             prefix.push_str("   ");
         } else {
-            s.push_str("┣");
+            s.push('┣');
             prefix.push_str("┃  ");
         }
         match self {
@@ -51,15 +56,15 @@ impl Node {
             Node::Int(val) => s.push_str(&val.to_string()),
             Node::Id { name, val_type : _ } => s.push_str(&name.to_string()),
             Node::Expr {expr, next} => s.push_str(
-                &format!("━EXPR\n{}\n{}", expr.fstr(prefix, false), next.fstr(prefix, true))),
+                &format!("EXPR\n{}\n{}", expr.fstr(prefix, false), next.fstr(prefix, true))),
             Node::InfixOp { op_type, lhs, rhs} => s.push_str(
                 &format!("━{:?}\n{}\n{}", op_type, lhs.fstr(prefix, false), rhs.fstr(prefix, true))),
             Node::PrefixOp {op_type, rhs} => s.push_str(
                 &format!("━{:?}\n{}", op_type, rhs.fstr(prefix, true))),
             Node::PostfixOp {op_type, lhs} => s.push_str(
                 &format!("━{:?}\n{}", op_type, lhs.fstr(prefix, true))),
-            Node::Block {statements, next} => s.push_str(
-                &format!("━BLOCK\n{}\n{}", statements.fstr(prefix, false), next.fstr(prefix, true))),
+            Node::Block {statements} => s.push_str(
+                &format!("━BLOCK\n{}", statements.fstr(prefix, true))),
             Node::Funct {name, args} => s.push_str(
                 &format!("━FUNCTION\n{}{}", 
                     name.fstr(prefix, false), 
@@ -69,8 +74,10 @@ impl Node {
                     .collect::<String>())),
             _ => todo!(),
         }
-        for _ in 0..3 {
-            prefix.pop();
+        if let Node::Expr {expr: _, next: _} = self {} else {
+            for _ in 0..3 {
+                prefix.pop();
+            }
         }
         s
     }

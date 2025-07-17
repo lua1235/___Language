@@ -18,7 +18,7 @@ impl<T : Read> Iterator for Scanner<T> {
 
     fn next(&mut self) -> Option<Self::Item> {
         // Fill the token buffer if it is empty
-        if self.tokens.is_empty() {
+        while self.tokens.is_empty() {
             self.lnum += 1;
             // Scan this line if queue empty
             let Some(line) = self.lines.next() else {return None};

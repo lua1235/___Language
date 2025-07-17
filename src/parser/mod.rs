@@ -1,4 +1,4 @@
-use std::{collections::HashSet, io::{BufRead, Read}};
+use std::{collections::HashSet, io::Read};
 use ast::Node;
 use crate::scanner::{token::Token, Scanner};
 
@@ -32,7 +32,10 @@ impl Parser {
 
     // This parser uses pratt parsing, which works somewhat similarly to recursive descent. It will
     // return the current ast upon encountering the provided match_tok, which cleanly handles
-    // matching of brackets and parentheses
+    // matching of brackets and parentheses.
+    // There are 2 reserved minimum binding powers. min_bp 0 parses at the statement level. (Return
+    // ast of the entire program)
+    // min_bp 2 parses at the expression level (Return ast of the next expression)
     fn parse<T : Read>(&mut self, tok_it : &mut Scanner<T>, min_bp : u32, match_tok : &HashSet<Token>) -> Box<Node> {
         // Invariant: The left of the current position of the parser in the token stream has
         // been fully parsed into a single ast.
@@ -56,51 +59,65 @@ impl Parser {
                 self.eof_read = true;
                 return Box::new(Node::Empty)
             },
-            Token::LCurly => { // Start scope
-                self.paren_stack.push(0);
-                let mut mt = HashSet::new();
-                mt.insert(Token::RCurly);
-                let expr = self.parse(tok_it, 0, &mt);
-                let Some(Token::RCurly) = tok_it.next() else {
-                    panic!("Unmatched curly braces")
-                };
-                let Some(x) = self.paren_stack.pop() else {
-                    panic!("No current stack frame (WTF)")
-                };
-                if x != 0 {
-                    panic!("Unclosed parentheses in current scope")
-                }
-                let next;
-                if let Some(Token::Semi) = tok_it.peek() {
-                    next = Box::new(Node::Empty);
-                } else {
-                    next = self.parse(tok_it, 0, match_tok);
-                }
-                return Box::new(Node::Block {
-                    statements : expr,
-                    next : next,
-                });
-            },
-            // Expression-level patterns
-            Token::IntConst(i) => Box::new(Node::Int(i)),
-            Token::Id(s) => Box::new(Node::Id{
+            // Primary Expressions
+            Token::IntConst(i) => Box::new(Node::Int(i)), // Int constant
+            Token::Id(s) => Box::new(Node::Id{ // Identifier
                 name : s.to_string(),
                 val_type : Token::IntKey, // Placeholder, need lookup table 
             }),
-            Token::LParen => {
+            Token::LCurly => { // Scope expressions
+                self.paren_stack.push(0);
+                let mt = HashSet::from([Token::RCurly]);
+                let lnum = tok_it.lnum;
+                let expr = self.parse(tok_it, 0, &mt);
+                let Some(Token::RCurly) = tok_it.next() else {
+                    panic!("No closing brace for open curly braces on line {lnum}")
+                };
+                let Some(_) = self.paren_stack.pop() else {
+                    panic!("No current stack frame (WTF)");
+                };
+                Box::new(Node::Block {
+                    statements : expr,
+                })
+            },
+            Token::LParen => { // Parenthesis expressions
                 *self.paren_stack.last_mut().unwrap() += 1;
                 // Parse the inside of the paren
-                let mut mt = HashSet::new();
-                mt.insert(Token::RParen);
-                let l = self.parse(tok_it, 0, &mt);
+                let lnum = tok_it.lnum;
+                let l = self.parse(tok_it, 2, &HashSet::from([Token::RParen]));
                 // Consume the close bracket
-                let Some(Token::RParen) = tok_it.next() else {
-                    panic!("Unmatched open parenthesis")
+                match tok_it.next() {
+                    Some(Token::RParen) => *self.paren_stack.last_mut().unwrap() -= 1,
+                    Some(x) => panic!("No closing parenthesis for open parenthesis on line {lnum} : Encountered {x:?}"),
+                    None => panic!("No closing parenthesis for open parenthesis on line {lnum} : EOF"),
                 };
-                *self.paren_stack.last_mut().unwrap() -= 1;
                 l
             },
-            // Check if is prefix operator. 
+            Token::If => { // If expressions
+                let lnum = tok_it.lnum;
+                let Some(Token::LParen) = tok_it.next() else {
+                    panic!("Expected parenthesis after if on line {lnum}")
+                };
+                // Parse the expression on the inside of the paren
+                let condition = self.parse(tok_it, 2, &HashSet::from([Token::RParen]));
+                // Consume the close bracket
+                match tok_it.next() {
+                    Some(Token::RParen) => *self.paren_stack.last_mut().unwrap() -= 1,
+                    Some(x) => panic!("No closing parenthesis for open parenthesis on line {lnum} : Encountered {x:?}"),
+                    None => panic!("No closing parenthesis for open parenthesis on line {lnum} : EOF"),
+                };
+                let tbranch = self.parse(tok_it, 2, &HashSet::from([Token::Else]));
+                let fbranch = if let Some(Token::Else) = tok_it.peek() {
+                    tok_it.next();
+                    self.parse(tok_it, 2, &HashSet::new())
+                } else {
+                    Box::new(Node::Empty)
+                };
+
+
+                todo!();
+            },
+            // Prefix expressions. 
             op => {
                 let Some(((), rbp)) = self.get_prefix_bp(&op, match_tok) else {
                     panic!("Error, bad prefix operator")
@@ -116,6 +133,7 @@ impl Parser {
         // We also advance the iterator past the right subtree, and set the tree with this operator as root.
         // let mut lookahead = tok_it.clone();
         while let Some(op) = tok_it.peek() {
+            let lnum = tok_it.lnum;
             // First check if it is a postfix operator
             if let Some((lbp, ())) = self.get_postfix_bp(&op, match_tok) {
                 // The subtree to the left of this is more strongly attracted to the previous operator
@@ -170,7 +188,7 @@ impl Parser {
                 continue;
             }
             // Get the binding power, or return if a close-bracket is detected
-            if let Some((lbp, rbp)) = self.get_infix_bp(&op, match_tok) {
+            if let Some((lbp, rbp)) = self.get_infix_bp(&op, match_tok, lnum) {
                 // The subtree to the left of this is more strongly attracted to the previous operator
                 if lbp < min_bp {
                     return left;
@@ -232,13 +250,13 @@ impl Parser {
 
     // Return the left and right binding powers of an infix operator. Different precedence levels
     // correspond to even binding power values. Odd values are used to represent associativity
-    fn get_infix_bp(&mut self, tok : & Token, end_tok : & HashSet<Token>) -> Option<(u32, u32)> {
+    fn get_infix_bp(&mut self, tok : & Token, end_tok : & HashSet<Token>, lnum : u64) -> Option<(u32, u32)> {
         if end_tok.contains(tok) {
             return None;
         }
         let ret = match tok {
             // Treat semicolons as a left associative infix operator which joins expressions
-            Token::Semi => (0, 1),
+            Token::Semi => (1, 0),
             Token::Assign 
                 | Token::AddAss 
                 | Token::SubAss 
@@ -248,7 +266,7 @@ impl Parser {
             Token::GT | Token::GE | Token::LT | Token::LE => (20, 21),
             Token::Add | Token::Sub => (24, 25),
             Token::Star | Token::Div => (26, 27),
-            _ => panic!("Bad binary operator : {:?}\nCurrent end_tok : {:?}", tok, end_tok),
+            _ => panic!("Bad binary operator on line {}: {:?}\nCurrent end_tok : {:?}",lnum, tok, end_tok),
         };
         Some(ret)
     }
