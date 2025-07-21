@@ -1,6 +1,5 @@
+use std::io;
 use std::fs::File;
-use std::io::{self, BufRead};
-use std::io::BufReader;
 use std::env;
 
 use scanner::Scanner;

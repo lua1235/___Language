@@ -30,6 +30,31 @@ impl Parser {
         println!("{}", *self.ast_head);
     }
 
+    // Return the ast representing a parenthesised expression. The open parenthesis should have
+    // already been consumed
+    fn parse_paren<T : Read>(&mut self, tok_it : &mut Scanner<T>) ->Box<Node> {
+        // Parse the inside of the paren
+        let lnum = tok_it.lnum;
+        let l = self.parse(tok_it, 2, &HashSet::from([Token::RParen]));
+        // Consume the close bracket
+        match tok_it.next() {
+            Some(Token::RParen) => l,
+            Some(x) => panic!("No closing parenthesis for open parenthesis on line {lnum} : Encountered {x:?}"),
+            None => panic!("No closing parenthesis for open parenthesis on line {lnum} : EOF"),
+        }
+    }
+    // Return the ast representing a scoped expression. The open curly bracket should have already
+    // been consumed
+    fn parse_scope<T : Read>(&mut self, tok_it : &mut Scanner<T>) -> Box<Node> {
+        let lnum = tok_it.lnum;
+        let expr = self.parse(tok_it, 0, &HashSet::from([Token::RCurly]));
+        let Some(Token::RCurly) = tok_it.next() else {
+            panic!("No closing brace for open curly braces on line {lnum}")
+        };
+        Box::new(Node::Block {
+            statements : expr,
+        })
+    }
     // This parser uses pratt parsing, which works somewhat similarly to recursive descent. It will
     // return the current ast upon encountering the provided match_tok, which cleanly handles
     // matching of brackets and parentheses.
@@ -65,57 +90,31 @@ impl Parser {
                 name : s.to_string(),
                 val_type : Token::IntKey, // Placeholder, need lookup table 
             }),
-            Token::LCurly => { // Scope expressions
-                self.paren_stack.push(0);
-                let mt = HashSet::from([Token::RCurly]);
-                let lnum = tok_it.lnum;
-                let expr = self.parse(tok_it, 0, &mt);
-                let Some(Token::RCurly) = tok_it.next() else {
-                    panic!("No closing brace for open curly braces on line {lnum}")
-                };
-                let Some(_) = self.paren_stack.pop() else {
-                    panic!("No current stack frame (WTF)");
-                };
-                Box::new(Node::Block {
-                    statements : expr,
-                })
-            },
-            Token::LParen => { // Parenthesis expressions
-                *self.paren_stack.last_mut().unwrap() += 1;
-                // Parse the inside of the paren
-                let lnum = tok_it.lnum;
-                let l = self.parse(tok_it, 2, &HashSet::from([Token::RParen]));
-                // Consume the close bracket
-                match tok_it.next() {
-                    Some(Token::RParen) => *self.paren_stack.last_mut().unwrap() -= 1,
-                    Some(x) => panic!("No closing parenthesis for open parenthesis on line {lnum} : Encountered {x:?}"),
-                    None => panic!("No closing parenthesis for open parenthesis on line {lnum} : EOF"),
-                };
-                l
-            },
+            Token::LCurly => self.parse_scope(tok_it),
+            // Parenthesis expressions
+            Token::LParen => self.parse_paren(tok_it),
             Token::If => { // If expressions
                 let lnum = tok_it.lnum;
                 let Some(Token::LParen) = tok_it.next() else {
                     panic!("Expected parenthesis after if on line {lnum}")
                 };
                 // Parse the expression on the inside of the paren
-                let condition = self.parse(tok_it, 2, &HashSet::from([Token::RParen]));
+                let condition = self.parse_paren(tok_it);
                 // Consume the close bracket
-                match tok_it.next() {
-                    Some(Token::RParen) => *self.paren_stack.last_mut().unwrap() -= 1,
-                    Some(x) => panic!("No closing parenthesis for open parenthesis on line {lnum} : Encountered {x:?}"),
-                    None => panic!("No closing parenthesis for open parenthesis on line {lnum} : EOF"),
-                };
-                let tbranch = self.parse(tok_it, 2, &HashSet::from([Token::Else]));
+                let mut tmatch_tok = match_tok.clone(); // Not too bad since this is only ever 2-3
+                tmatch_tok.insert(Token::Else);
+                let tbranch = self.parse(tok_it, 2, &tmatch_tok);
                 let fbranch = if let Some(Token::Else) = tok_it.peek() {
                     tok_it.next();
-                    self.parse(tok_it, 2, &HashSet::new())
+                    self.parse(tok_it, 2, match_tok)
                 } else {
                     Box::new(Node::Empty)
                 };
-
-
-                todo!();
+                Box::new(Node::If{
+                    cond: condition,
+                    t_expr: tbranch,
+                    f_expr: fbranch,
+                })
             },
             // Prefix expressions. 
             op => {

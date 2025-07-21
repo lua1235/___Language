@@ -35,8 +35,8 @@ pub enum Node {
     },
     If {
         cond : Box<Node>,
-        t_expr : Box<Node>
-        f_expr : Box<Node>
+        t_expr : Box<Node>,
+        f_expr : Box<Node>,
     }
 }
 
@@ -72,7 +72,10 @@ impl Node {
                     .iter()
                     .map(|x| format!("\n{}", x.fstr(prefix, false)))
                     .collect::<String>())),
-            _ => todo!(),
+            Node::If {cond, t_expr, f_expr} => s.push_str(
+                &format!("━IF\n{}\n{}\n{}", cond.fstr(prefix, false), t_expr.fstr(prefix, false), f_expr.fstr(prefix, true)  )
+                ),
+            // _ => todo!(),
         }
         if let Node::Expr {expr: _, next: _} = self {} else {
             for _ in 0..3 {
