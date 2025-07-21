@@ -11,7 +11,7 @@ In ___, almost everything is an expression. This means that you can very natural
   int pow(int base, int exponent) = 
     <b>if</b>(exponent == 0) 1 
     <b>else</b> (<b>if</b>(exponent % 2 == 1) base <b>else</b> 1) * pow(base * base, exponent >>= 1)
-  ;
+  ; // From this point on, calls to pow are well-defined
 </pre>
 ## Nicer Assignment
 Has it ever irked you that the statement `y=3*x=5+2` isn't the same as `y=3*7` (In fact, it won't even compile)? This is because the assignment operator has low precedence in C, which means that the compiler parses it as `y=((3*x)=(5+2))`, and `3*x` is not an l-value. Bumping up the associativity of the = won't help either, since that would break regular assignment. 
