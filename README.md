@@ -5,7 +5,7 @@ A compiler for the ___ language, written in Rust to learn Rust. The language is 
 Refer to the wiki for a full language spec, as well as a programmer's guide. Here is a highlight of a few of the features that ___ implements.
 
 ## Expression-Based Syntax
-In ___, almost everything is an expression. This means that you can very naturally write pseudo-functional code by composing expressions using different operators. An expression followed by a semicolon is considered a statement, and semantically it means to evaluate the expression to the left of the semicolon first, before evaluating the remainder of the program. This distinction is mostly for clarity, since a definition similar to the comma operator in C and C++ would be equivalent.
+In ___, almost everything is an expression. This means that you can very naturally write functional code by composing expressions using different operators. An expression followed by a semicolon is considered a statement, and semantically it means to evaluate the expression to the left of the semicolon first, before evaluating the remainder of the program. This distinction is mostly for clarity, since a definition similar to the comma operator in C and C++ would be equivalent.
 <pre>
   // Fast exponentiation function
   <b>int</b> pow(<b>int</b> base, int exponent) = 
