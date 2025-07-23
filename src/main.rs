@@ -7,16 +7,19 @@ use parser::Parser;
 
 mod scanner;
 mod parser;
+mod ast;
 
 fn main() -> io::Result<()> {
     let filepath = parse_args(env::args());
     let file = File::open(&filepath)?;
-    let file2 = File::open(&filepath)?;
     let mut scanner = Scanner::new(file);
+    /*
     for tok in scanner.collect::<Vec<_>>() {
         println!("{tok:?}");
     }
+    let file2 = File::open(&filepath)?;
     scanner = Scanner::new(file2);
+    */
     let mut parser = Parser::new();
     parser.gen_ast(&mut scanner);
     parser.print_ast();

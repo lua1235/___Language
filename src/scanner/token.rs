@@ -1,6 +1,3 @@
-/*
-Common features shared between the different components of the compiler
-*/
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Token {
     // Meta Control Tokens
@@ -12,10 +9,13 @@ pub enum Token {
     If,
     Else,
     IntKey,
+    CharKey,
     Ret,
     // Value tokens
-    Id(String),
     IntConst(i32),
+    CharConst(char),
+    StrConst(String),
+    Id(String),
     // Operators
     LCurly, // {
     RCurly, // }

@@ -1,13 +1,11 @@
 use std::{collections::HashSet, io::Read};
-use ast::Node;
 use crate::scanner::{token::Token, Scanner};
+use crate::ast::Node;
 
-mod ast;
 
 pub struct Parser {
     eof_read : bool,
     ast_head : Box<Node>,
-    paren_stack : Vec<u32>, // Used to match brackets. 
     open_bracks : u32,
 
 }
@@ -17,7 +15,6 @@ impl Parser {
         Self {
             eof_read : false,
             ast_head : Box::new(Node::Empty),
-            paren_stack : vec![0],
             open_bracks : 0,
         }
     }
@@ -43,6 +40,7 @@ impl Parser {
             None => panic!("No closing parenthesis for open parenthesis on line {lnum} : EOF"),
         }
     }
+
     // Return the ast representing a scoped expression. The open curly bracket should have already
     // been consumed
     fn parse_scope<T : Read>(&mut self, tok_it : &mut Scanner<T>) -> Box<Node> {
@@ -55,6 +53,26 @@ impl Parser {
             statements : expr,
         })
     }
+
+    // Return the ast representing a parenthesised expression. The open parenthesis should have
+    // already been consumed
+    fn parse_array<T : Read>(&mut self, tok_it : &mut Scanner<T>) ->Box<Node> {
+        let lnum = tok_it.lnum;
+        let mt = HashSet::from([Token::RBrack, Token::Comma]);
+        let mut elements = Box::new(Vec::new());
+        let mut e = self.parse(tok_it, 2, &mt);
+        while let Some(Token::Comma) = tok_it.peek() {
+            tok_it.next();
+            elements.push(*e);
+            e = self.parse(tok_it, 0, &mt);
+        }
+        let Some(Token::RBrack) = tok_it.next() else {
+            panic!("Array on line {lnum} not closed")
+        };
+        elements.push(*e);
+        Box::new(Node::Array(elements))
+    }
+
     // This parser uses pratt parsing, which works somewhat similarly to recursive descent. It will
     // return the current ast upon encountering the provided match_tok, which cleanly handles
     // matching of brackets and parentheses.
@@ -86,13 +104,17 @@ impl Parser {
             },
             // Primary Expressions
             Token::IntConst(i) => Box::new(Node::Int(i)), // Int constant
+            Token::CharConst(c) => Box::new(Node::Char(c)), // Char constant
+            Token::StrConst(s) => Box::new(Node::Str(Box::new(s))), // String constant
             Token::Id(s) => Box::new(Node::Id{ // Identifier
-                name : s.to_string(),
+                name : s,
                 val_type : Token::IntKey, // Placeholder, need lookup table 
             }),
             Token::LCurly => self.parse_scope(tok_it),
             // Parenthesis expressions
             Token::LParen => self.parse_paren(tok_it),
+            // Constant Array expressions
+            Token::LBrack => self.parse_array(tok_it), 
             Token::If => { // If expressions
                 let lnum = tok_it.lnum;
                 let Some(Token::LParen) = tok_it.next() else {
@@ -102,7 +124,8 @@ impl Parser {
                 let condition = self.parse_paren(tok_it);
                 // Consume the close bracket
                 let mut tmatch_tok = match_tok.clone(); // Not too bad since this is only ever 2-3
-                tmatch_tok.insert(Token::Else);
+                tmatch_tok.insert(Token::Else); // Doesn't matter to us if Else is already being
+                                                // matched
                 let tbranch = self.parse(tok_it, 2, &tmatch_tok);
                 let fbranch = if let Some(Token::Else) = tok_it.peek() {
                     tok_it.next();
@@ -227,8 +250,9 @@ impl Parser {
             return None;
         }
         let ret = match tok {
+            Token::Ret => ((), 4),
             Token::Inc | Token::Dec => ((), 28),
-            Token::IntKey => ((), 34),
+            Token::IntKey | Token::CharKey => ((), 34),
             _ => panic!("Bad prefix operator : {:?}\nCurrent end_tok : {:?}", tok, end_tok),
         };
         Some(ret)

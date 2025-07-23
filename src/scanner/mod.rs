@@ -65,13 +65,14 @@ impl<T : Read> Scanner<T> {
             "if" => Token::If,
             "else" => Token::Else,
             "int" => Token::IntKey,
+            "char" => Token::CharKey,
             "return" => Token::Ret,
             _ => Token::Id(buffer.to_string()),
         }
     }
 
     // For now, just support base 10 ints
-    fn read_const(&self, reader : &mut Peekable<Chars>, buffer : &mut String) -> Token {
+    fn read_int_const(&self, reader : &mut Peekable<Chars>, buffer : &mut String) -> Token {
         while let Some(x) = reader.peek() {
             if !x.is_ascii_digit() {
                 break;
@@ -79,11 +80,29 @@ impl<T : Read> Scanner<T> {
             buffer.push(*x);
             reader.next();
         }
-        Token::IntConst(buffer.parse().expect("IntConst parsed incorrectly"))
+        Token::IntConst(buffer.parse().expect("IntConst formatted incorrectly"))
+    }
+
+    // Consume a string
+    fn read_str_const(&self, reader : &mut Peekable<Chars>, buffer : &mut String) -> Token {
+        while let Some(x) = reader.next() {
+            if x == '"' {
+                return Token::StrConst(buffer.clone());
+            }
+            buffer.push(x);
+        }
+        panic!("No matching double quote to end string constant starting on line {0}", self.lnum)
+    }
+
+    // Consume a single character
+    fn read_char_const(&self, reader : &mut Peekable<Chars>) -> Token {
+        let Some(x) = reader.next() else {panic!("Unexpected single quote at end of program")};
+        let Some('\'') = reader.next() else {panic!("No matching single quote to close char on line {0}", self.lnum)};
+        Token::CharConst(x)
     }
 
     fn read_id_or_key(&self, reader : &mut Peekable<Chars>, buffer : &mut String) -> Token {
-            // Lookahead to only consume characters which can go in an identifier
+        // Lookahead to only consume characters which can go in an identifier
         while let Some(x) = reader.peek() {
             if !(x.is_ascii_alphanumeric() || *x == '_') {
                 break;
@@ -115,6 +134,8 @@ impl<T : Read> Scanner<T> {
                 ';' => Token::Semi,
                 ':' => Token::Colon,
                 ',' => Token::Comma,
+                '"' => self.read_str_const(reader, &mut "".to_string()),
+                '\'' => self.read_char_const(reader),
                 '+' => match reader.peek() {
                     Some('+') => {
                         reader.next();
@@ -183,7 +204,7 @@ impl<T : Read> Scanner<T> {
                     if other.is_ascii_alphabetic() || other == '_' {
                         self.read_id_or_key(reader, &mut other.to_string())
                     } else if other.is_ascii_digit() {
-                        self.read_const(reader,  &mut other.to_string())
+                        self.read_int_const(reader,  &mut other.to_string())
                     } else {
                         panic!("unrecognized token {other:?}")
                     }

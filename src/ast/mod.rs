@@ -2,9 +2,14 @@ use std::fmt::Display;
 
 use crate::scanner::token::Token;
 
+pub mod ast_visitor;
+
 pub enum Node {
     Empty, // A placeholder node which represents the unparsed program or a parsed, but empty, program.
     Int(i32),
+    Char(char),
+    Str(Box<String>),
+    Array(Box<Vec<Node>>),
     Expr { // An expression statement, of the form EXPR ; 
         expr : Box<Node>,
         next : Box<Node>,
@@ -42,7 +47,6 @@ pub enum Node {
 
 impl Node {
     fn fstr(&self, prefix : &mut String, islast : bool) -> String {
-        let offset = 2;
         let mut s = prefix.clone();
         if let Node::Expr {expr: _, next: _} = self {} else if islast {
             s.push('┗');
@@ -54,6 +58,8 @@ impl Node {
         match self {
             Node::Empty => s.push_str("empty"),
             Node::Int(val) => s.push_str(&val.to_string()),
+            Node::Char(val) => s.push_str(&format!("'{0}'", val)),
+            Node::Str(val) => s.push_str(&format!("\"{0}\"", val)),
             Node::Id { name, val_type : _ } => s.push_str(&name.to_string()),
             Node::Expr {expr, next} => s.push_str(
                 &format!("EXPR\n{}\n{}", expr.fstr(prefix, false), next.fstr(prefix, true))),
@@ -72,10 +78,16 @@ impl Node {
                     .iter()
                     .map(|x| format!("\n{}", x.fstr(prefix, false)))
                     .collect::<String>())),
+            Node::Array(elements) => s.push_str(
+                &format!("━ARRAY{}", 
+                    elements
+                    .iter()
+                    .map(|x| format!("\n{}", x.fstr(prefix, false)))
+                    .collect::<String>())),
             Node::If {cond, t_expr, f_expr} => s.push_str(
                 &format!("━IF\n{}\n{}\n{}", cond.fstr(prefix, false), t_expr.fstr(prefix, false), f_expr.fstr(prefix, true)  )
                 ),
-            // _ => todo!(),
+                _ => todo!(),
         }
         if let Node::Expr {expr: _, next: _} = self {} else {
             for _ in 0..3 {
