@@ -21,8 +21,7 @@ fn main() -> io::Result<()> {
     scanner = Scanner::new(file2);
     */
     let mut parser = Parser::new();
-    parser.gen_ast(&mut scanner);
-    parser.print_ast();
+    let ast = parser.gen_ast(&mut scanner);
     Ok(())
 }
 

@@ -1,8 +1,11 @@
 use std::fmt::Display;
 
+use ast_walker::AstWalker;
+
 use crate::scanner::token::Token;
 
-pub mod ast_visitor;
+pub mod ast_walker;
+pub mod ast_format;
 
 pub enum Node {
     Empty, // A placeholder node which represents the unparsed program or a parsed, but empty, program.
@@ -10,7 +13,7 @@ pub enum Node {
     Char(char),
     Str(Box<String>),
     Array(Box<Vec<Node>>),
-    Expr { // An expression statement, of the form EXPR ; 
+    Statement { // An expression statement, of the form EXPR ; 
         expr : Box<Node>,
         next : Box<Node>,
     },
@@ -48,7 +51,7 @@ pub enum Node {
 impl Node {
     fn fstr(&self, prefix : &mut String, islast : bool) -> String {
         let mut s = prefix.clone();
-        if let Node::Expr {expr: _, next: _} = self {} else if islast {
+        if let Node::Statement {expr: _, next: _} = self {} else if islast {
             s.push('┗');
             prefix.push_str("   ");
         } else {
@@ -61,7 +64,7 @@ impl Node {
             Node::Char(val) => s.push_str(&format!("'{0}'", val)),
             Node::Str(val) => s.push_str(&format!("\"{0}\"", val)),
             Node::Id { name, val_type : _ } => s.push_str(&name.to_string()),
-            Node::Expr {expr, next} => s.push_str(
+            Node::Statement {expr, next} => s.push_str(
                 &format!("EXPR\n{}\n{}", expr.fstr(prefix, false), next.fstr(prefix, true))),
             Node::InfixOp { op_type, lhs, rhs} => s.push_str(
                 &format!("━{:?}\n{}\n{}", op_type, lhs.fstr(prefix, false), rhs.fstr(prefix, true))),
@@ -89,7 +92,7 @@ impl Node {
                 ),
                 _ => todo!(),
         }
-        if let Node::Expr {expr: _, next: _} = self {} else {
+        if let Node::Statement {expr: _, next: _} = self {} else {
             for _ in 0..3 {
                 prefix.pop();
             }

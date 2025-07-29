@@ -5,26 +5,19 @@ use crate::ast::Node;
 
 pub struct Parser {
     eof_read : bool,
-    ast_head : Box<Node>,
     open_bracks : u32,
-
 }
 
 impl Parser {
     pub fn new() -> Self {
         Self {
             eof_read : false,
-            ast_head : Box::new(Node::Empty),
             open_bracks : 0,
         }
     }
 
-    pub fn gen_ast<T : Read>(&mut self, tokens : &mut Scanner<T>) {
-        self.ast_head = self.parse(tokens, 0, &HashSet::new());
-    }
-
-    pub fn print_ast(&mut self) {
-        println!("{}", *self.ast_head);
+    pub fn gen_ast<T : Read>(&mut self, tokens : &mut Scanner<T>) -> Box<Node> {
+        return self.parse(tokens, 0, &HashSet::new());
     }
 
     // Return the ast representing a parenthesised expression. The open parenthesis should have
@@ -224,7 +217,7 @@ impl Parser {
                     if self.open_bracks != 0 {
                         panic!("Unmatched open brackets in this expression")
                     }
-                    left = Box::new(Node::Expr {
+                    left = Box::new(Node::Statement {
                         expr : left,
                         next : right,
                     });
