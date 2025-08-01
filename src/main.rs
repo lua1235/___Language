@@ -2,6 +2,8 @@ use std::io;
 use std::fs::File;
 use std::env;
 
+use ast::format::AstFormat;
+use ast::walker::AstWalker;
 use scanner::Scanner;
 use parser::Parser;
 
@@ -22,6 +24,8 @@ fn main() -> io::Result<()> {
     */
     let mut parser = Parser::new();
     let ast = parser.gen_ast(&mut scanner);
+    let mut ast_formatter = AstFormat::new(); 
+    println!("{}", ast_formatter.walk(&ast));
     Ok(())
 }
 

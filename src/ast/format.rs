@@ -1,6 +1,6 @@
 use crate::scanner::token::Token;
 
-use super::{ast_walker::AstWalker, Node};
+use super::{walker::AstWalker, Node};
 
 // Provide methods to print out a formatted AST
 pub struct AstFormat {
@@ -23,11 +23,11 @@ impl AstWalker<String> for AstFormat {
         if let Node::Statement {expr: _, next: _} = n {} else if self.last_child {
             s.push('┗');
             self.prefix_stack.push_str("   ");
-            self.last_child = false
         } else {
             s.push('┣');
             self.prefix_stack.push_str("┃  ");
         }
+        self.last_child = false;
         s.push_str(&self.match_variant(n));
         if let Node::Statement {expr: _, next: _} = n {} else {
             for _ in 0..3 {
@@ -73,7 +73,7 @@ impl AstWalker<String> for AstFormat {
         format!("━BLOCK\n{}", self.walk(statements))
     }
 
-    fn walk_id(&mut self, name : &str, val_type : &Token) -> String {
+    fn walk_id(&mut self, name : &str) -> String {
         format!("━{}", name)
     }
 

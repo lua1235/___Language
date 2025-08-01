@@ -19,7 +19,7 @@ pub trait AstWalker<T> {
             Node::Array(a) => self.walk_array(a),
             Node::Statement { expr, next } => self.walk_statement(expr, next),
             Node::Block { statements } => self.walk_block(statements),
-            Node::Id { name, val_type } => self.walk_id(name, val_type),
+            Node::Id { name } => self.walk_id(name),
             Node::InfixOp { op_type, lhs, rhs } => self.walk_infix(op_type, lhs, rhs),
             Node::PrefixOp { op_type, rhs } => self.walk_prefix(op_type, rhs),
             Node::PostfixOp { op_type, lhs } => self.walk_postfix(op_type, lhs),
@@ -36,7 +36,7 @@ pub trait AstWalker<T> {
     fn walk_array(&mut self, elements : &Box<Vec<Node>>) -> T;
     fn walk_statement(&mut self, expr : &Node, next : &Node) -> T;
     fn walk_block(&mut self, statements : &Node) -> T;
-    fn walk_id(&mut self, name : &str, val_type : &Token) -> T;
+    fn walk_id(&mut self, name : &str) -> T;
     fn walk_infix(&mut self, op_type : &Token, lhs : &Node, rhs : &Node) -> T;
     fn walk_prefix(&mut self, op_type : &Token, rhs : &Node) -> T;
     fn walk_postfix(&mut self, op_type : &Token, lhs : &Node) -> T;

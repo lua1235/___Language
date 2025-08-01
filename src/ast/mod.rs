@@ -1,12 +1,13 @@
 use std::fmt::Display;
 
-use ast_walker::AstWalker;
-
 use crate::scanner::token::Token;
 
-pub mod ast_walker;
-pub mod ast_format;
+pub mod walker;
+pub mod format;
+pub mod symbol_table;
 
+// Recursive datatype representing an ast of the program. Has no methods of its own. Functions
+// acting on this datatype should be implemented through the traits ast_walker and ast_toucher
 pub enum Node {
     Empty, // A placeholder node which represents the unparsed program or a parsed, but empty, program.
     Int(i32),
@@ -22,7 +23,6 @@ pub enum Node {
     },
     Id {
         name : String,
-        val_type : Token, 
     },
     InfixOp {
         op_type : Token,
@@ -45,66 +45,6 @@ pub enum Node {
         cond : Box<Node>,
         t_expr : Box<Node>,
         f_expr : Box<Node>,
-    }
-}
-
-impl Node {
-    fn fstr(&self, prefix : &mut String, islast : bool) -> String {
-        let mut s = prefix.clone();
-        if let Node::Statement {expr: _, next: _} = self {} else if islast {
-            s.push('┗');
-            prefix.push_str("   ");
-        } else {
-            s.push('┣');
-            prefix.push_str("┃  ");
-        }
-        match self {
-            Node::Empty => s.push_str("empty"),
-            Node::Int(val) => s.push_str(&val.to_string()),
-            Node::Char(val) => s.push_str(&format!("'{0}'", val)),
-            Node::Str(val) => s.push_str(&format!("\"{0}\"", val)),
-            Node::Id { name, val_type : _ } => s.push_str(&name.to_string()),
-            Node::Statement {expr, next} => s.push_str(
-                &format!("EXPR\n{}\n{}", expr.fstr(prefix, false), next.fstr(prefix, true))),
-            Node::InfixOp { op_type, lhs, rhs} => s.push_str(
-                &format!("━{:?}\n{}\n{}", op_type, lhs.fstr(prefix, false), rhs.fstr(prefix, true))),
-            Node::PrefixOp {op_type, rhs} => s.push_str(
-                &format!("━{:?}\n{}", op_type, rhs.fstr(prefix, true))),
-            Node::PostfixOp {op_type, lhs} => s.push_str(
-                &format!("━{:?}\n{}", op_type, lhs.fstr(prefix, true))),
-            Node::Block {statements} => s.push_str(
-                &format!("━BLOCK\n{}", statements.fstr(prefix, true))),
-            Node::Funct {name, args} => s.push_str(
-                &format!("━FUNCTION\n{}{}", 
-                    name.fstr(prefix, false), 
-                    args
-                    .iter()
-                    .map(|x| format!("\n{}", x.fstr(prefix, false)))
-                    .collect::<String>())),
-            Node::Array(elements) => s.push_str(
-                &format!("━ARRAY{}", 
-                    elements
-                    .iter()
-                    .map(|x| format!("\n{}", x.fstr(prefix, false)))
-                    .collect::<String>())),
-            Node::If {cond, t_expr, f_expr} => s.push_str(
-                &format!("━IF\n{}\n{}\n{}", cond.fstr(prefix, false), t_expr.fstr(prefix, false), f_expr.fstr(prefix, true)  )
-                ),
-                _ => todo!(),
-        }
-        if let Node::Statement {expr: _, next: _} = self {} else {
-            for _ in 0..3 {
-                prefix.pop();
-            }
-        }
-        s
-    }
-}
-
-// For now, just printing as reverse polish is enough
-impl Display for Node {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.fstr(&mut String::new(), true))
     }
 }
 

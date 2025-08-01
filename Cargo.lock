@@ -3,5 +3,5 @@
 version = 4
 
 [[package]]
-name = "underInterpreter"
+name = "under"
 version = "0.1.0"

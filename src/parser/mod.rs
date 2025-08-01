@@ -101,7 +101,6 @@ impl Parser {
             Token::StrConst(s) => Box::new(Node::Str(Box::new(s))), // String constant
             Token::Id(s) => Box::new(Node::Id{ // Identifier
                 name : s,
-                val_type : Token::IntKey, // Placeholder, need lookup table 
             }),
             Token::LCurly => self.parse_scope(tok_it),
             // Parenthesis expressions
