@@ -7,9 +7,11 @@ use ast::walker::AstWalker;
 use scanner::Scanner;
 use parser::Parser;
 
+mod ast;
+
 mod scanner;
 mod parser;
-mod ast;
+mod name_resolution;
 
 fn main() -> io::Result<()> {
     let filepath = parse_args(env::args());

@@ -1,6 +1,6 @@
 use std::{collections::HashSet, io::Read};
 use crate::scanner::{token::Token, Scanner};
-use crate::ast::Node;
+use crate::ast::{self, Node};
 
 
 pub struct Parser {
@@ -16,13 +16,13 @@ impl Parser {
         }
     }
 
-    pub fn gen_ast<T : Read>(&mut self, tokens : &mut Scanner<T>) -> Box<Node> {
+    pub fn gen_ast<T : Read>(&mut self, tokens : &mut Scanner<T>) -> Node {
         return self.parse(tokens, 0, &HashSet::new());
     }
 
     // Return the ast representing a parenthesised expression. The open parenthesis should have
     // already been consumed
-    fn parse_paren<T : Read>(&mut self, tok_it : &mut Scanner<T>) ->Box<Node> {
+    fn parse_paren<T : Read>(&mut self, tok_it : &mut Scanner<T>) ->Node {
         // Parse the inside of the paren
         let lnum = tok_it.lnum;
         let l = self.parse(tok_it, 2, &HashSet::from([Token::RParen]));
@@ -36,34 +36,36 @@ impl Parser {
 
     // Return the ast representing a scoped expression. The open curly bracket should have already
     // been consumed
-    fn parse_scope<T : Read>(&mut self, tok_it : &mut Scanner<T>) -> Box<Node> {
+    fn parse_scope<T : Read>(&mut self, tok_it : &mut Scanner<T>) -> Node {
         let lnum = tok_it.lnum;
         let expr = self.parse(tok_it, 0, &HashSet::from([Token::RCurly]));
         let Some(Token::RCurly) = tok_it.next() else {
             panic!("No closing brace for open curly braces on line {lnum}")
         };
-        Box::new(Node::Block {
+        Node::Block(Box::new(ast::Block {
+            lnum : lnum,
             statements : expr,
-        })
+            scope : None
+        }))
     }
 
     // Return the ast representing a parenthesised expression. The open parenthesis should have
     // already been consumed
-    fn parse_array<T : Read>(&mut self, tok_it : &mut Scanner<T>) ->Box<Node> {
+    fn parse_array<T : Read>(&mut self, tok_it : &mut Scanner<T>) ->Node {
         let lnum = tok_it.lnum;
         let mt = HashSet::from([Token::RBrack, Token::Comma]);
-        let mut elements = Box::new(Vec::new());
+        let mut elements = Vec::new();
         let mut e = self.parse(tok_it, 2, &mt);
         while let Some(Token::Comma) = tok_it.peek() {
             tok_it.next();
-            elements.push(*e);
+            elements.push(e);
             e = self.parse(tok_it, 0, &mt);
         }
         let Some(Token::RBrack) = tok_it.next() else {
             panic!("Array on line {lnum} not closed")
         };
-        elements.push(*e);
-        Box::new(Node::Array(elements))
+        elements.push(e);
+        Node::new_array(&lnum, elements)
     }
 
     // This parser uses pratt parsing, which works somewhat similarly to recursive descent. It will
@@ -72,18 +74,18 @@ impl Parser {
     // There are 2 reserved minimum binding powers. min_bp 0 parses at the statement level. (Return
     // ast of the entire program)
     // min_bp 2 parses at the expression level (Return ast of the next expression)
-    fn parse<T : Read>(&mut self, tok_it : &mut Scanner<T>, min_bp : u32, match_tok : &HashSet<Token>) -> Box<Node> {
+    fn parse<T : Read>(&mut self, tok_it : &mut Scanner<T>, min_bp : u32, match_tok : &HashSet<Token>) -> Node {
         // Invariant: The left of the current position of the parser in the token stream has
         // been fully parsed into a single ast.
         if self.eof_read {
-            return Box::new(Node::Empty)
+            return Node::Empty
         }
         let Some(x) = tok_it.peek() else {
             self.eof_read = true;
-            return Box::new(Node::Empty)
+            return Node::Empty
         };
         if match_tok.contains(&x) {
-            return Box::new(Node::Empty)
+            return Node::Empty
         }
         // Don't advance if we encountered a match_tok: Instead, return until the parse which
         // started the match can handle it
@@ -93,15 +95,13 @@ impl Parser {
             // Encounter the counterpart to an open Token pair
             Token::EOF => {
                 self.eof_read = true;
-                return Box::new(Node::Empty)
+                return Node::Empty
             },
             // Primary Expressions
-            Token::IntConst(i) => Box::new(Node::Int(i)), // Int constant
-            Token::CharConst(c) => Box::new(Node::Char(c)), // Char constant
-            Token::StrConst(s) => Box::new(Node::Str(Box::new(s))), // String constant
-            Token::Id(s) => Box::new(Node::Id{ // Identifier
-                name : s,
-            }),
+            Token::IntConst(i) => Node::new_int(&tok_it.lnum, &i), // Int constant
+            Token::CharConst(c) => Node::new_char(&tok_it.lnum, &c), // Char constant
+            Token::StrConst(s) => Node::new_str(&tok_it.lnum, &s), // String constant
+            Token::Id(s) => Node::new_id(&tok_it.lnum, &s),
             Token::LCurly => self.parse_scope(tok_it),
             // Parenthesis expressions
             Token::LParen => self.parse_paren(tok_it),
@@ -123,23 +123,17 @@ impl Parser {
                     tok_it.next();
                     self.parse(tok_it, 2, match_tok)
                 } else {
-                    Box::new(Node::Empty)
+                    Node::Empty
                 };
-                Box::new(Node::If{
-                    cond: condition,
-                    t_expr: tbranch,
-                    f_expr: fbranch,
-                })
+                Node::new_if(&lnum, condition, tbranch, fbranch)
             },
             // Prefix expressions. 
             op => {
                 let Some(((), rbp)) = self.get_prefix_bp(&op, match_tok) else {
                     panic!("Error, bad prefix operator")
                 };
-                Box::new(Node::PrefixOp{
-                    op_type : op.clone(),
-                    rhs : self.parse(tok_it, rbp, match_tok)
-                })
+                let right = self.parse(tok_it, rbp, match_tok);
+                Node::new_prefix(&tok_it.lnum, &op, right)
             },
         };
         // Each iteration, the iterator is positioned at an operator which 
@@ -166,38 +160,27 @@ impl Parser {
                             panic!("Unmatched open bracket")
                         };
                         self.open_bracks -= 1;
-                        Box::new(Node::InfixOp {
-                            op_type : op.clone(),
-                            lhs : left,
-                            rhs : ind
-                        })
+                        Node::new_infix(&lnum, &op, left, ind)
                     },
                     // Function call
                     Token::LParen => {
                         let mut mt = HashSet::new();
                         mt.insert(Token::RParen);
                         mt.insert(Token::Comma);
-                        let mut args = Box::new(Vec::new());
+                        let mut args = Vec::new();
                         let mut ai = self.parse(tok_it, 0, &mt);
                         while let Some(Token::Comma) = tok_it.peek() {
                             tok_it.next();
-                            args.push(*ai);
+                            args.push(ai);
                             ai = self.parse(tok_it, 0, &mt);
                         }
                         let Some(Token::RParen) = tok_it.next() else {
                             panic!("Unmatched open paren")
                         };
-                        args.push(*ai);
-                        Box::new(Node::Funct {
-                            name : left,
-                            args : args
-                        })
-
+                        args.push(ai);
+                        Node::new_funct(&lnum, left, args)
                     },
-                    _ => Box::new(Node::PostfixOp {
-                        op_type : op.clone(),
-                        lhs : left
-                    }),
+                    _ => Node::new_postfix(&lnum, &op, left),
                 };
                 continue;
             }
@@ -216,16 +199,9 @@ impl Parser {
                     if self.open_bracks != 0 {
                         panic!("Unmatched open brackets in this expression")
                     }
-                    left = Box::new(Node::Statement {
-                        expr : left,
-                        next : right,
-                    });
+                    left = Node::new_statement(&lnum, left, right);
                 } else {
-                    left = Box::new(Node::InfixOp {
-                        op_type : op.clone(), // This is fast enough for tokens
-                        lhs : left,
-                        rhs : right,
-                    });
+                    left = Node::new_infix(&lnum, &op, left, right);
                 }
                 continue;
             }
