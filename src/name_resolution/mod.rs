@@ -1,43 +1,45 @@
 use std::{cell::RefCell, rc::Rc};
 
-use symbol_table::{Symbol, SymbolTable, TypeBase};
+use symbol::{Symbol, SymbolTable, Types, };
 
 use crate::ast::{self, Node, toucher::AstToucher};
 
-pub mod symbol_table;
+pub mod symbol;
 
 // Perform name resolution and type checking on the ast, and create a tree of scopes that is bound
 // to the ast.
 pub struct Resolver {
-    scope_stack : Vec<Rc<RefCell<SymbolTable>>>
+    table : SymbolTable,
 }
 
 impl Resolver {
     pub fn new() -> Self {
         Resolver {
-            scope_stack : Vec::from([Rc::new(RefCell::new(SymbolTable::new()))])
+            table : SymbolTable::new(),
         }
     }
 }
 
+// Return the type information of the subast rooted at the node, if the subtree is valid
 impl AstToucher<Symbol> for Resolver {
     fn walk_empty(&mut self) -> Symbol {
-        todo!()
     }
 
     fn walk_int(&mut self, inner : &mut ast::Int) -> Symbol {
-        todo!()
+        Symbol::new_int(Some(inner.val), true)
     }
 
     fn walk_char(&mut self, inner : &mut ast::Char) -> Symbol {
-        todo!()
+        Symbol::new_char(Some(inner.val), true)
     }
 
+    // In the name resolution stage, don't actually allocate memory, just assign to a dummy address
     fn walk_str(&mut self, inner : &mut ast::Str) -> Symbol {
-        todo!()
+        Symbol::new_pointer(Some(0), true, Types::Char)
     }
 
     fn walk_array(&mut self, inner : &mut ast::Array) -> Symbol {
+        let ele_type = inner.val.iter_mut().fold(None, |acc, x| self.walk(x));
         todo!()
     }
 

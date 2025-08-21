@@ -9,8 +9,10 @@ use parser::Parser;
 
 mod ast;
 
+
 mod scanner;
 mod parser;
+mod interp;
 mod name_resolution;
 
 fn main() -> io::Result<()> {
