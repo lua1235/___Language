@@ -27,6 +27,7 @@ pub enum Node {
     Funct(Box<Funct>),
     If(Box<If>),
 }
+
 impl Node {
     pub fn new_int(lnum : &u64, val : &i32) -> Node {
         Node::Int(Box::new(Int {
@@ -152,7 +153,6 @@ pub struct Statement {
 pub struct Block { 
     pub lnum : u64,
     pub statements : Node, // Statements within the block
-    pub scope : Option<Rc<RefCell<SymbolTable>>>, // pointer to symbol table of current scope
 }
 
 pub struct Id {
