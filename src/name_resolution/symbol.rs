@@ -1,13 +1,39 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{collections::HashMap, ops::Deref, rc::Rc};
 
 // Formal list of defined types in the language
-#[derive(Clone, PartialEq, Eq)]
-pub enum Types {
-    Undefined,
-    Int,
-    Char,
-    Pointer(Box<Types>),
-    Funct(Vec<Types>),
+#[derive(Clone)]
+// All types have an additional boolean for whether it is assignable
+pub enum Types { 
+    Undefined(bool),
+    Int(bool),
+    Char(bool),
+    Pointer(bool, Box<Types>),
+    Funct(bool, Vec<Types>),
+}
+
+impl Types {
+    pub fn assignable(&self) -> bool {
+        match self {
+            Types::Undefined(ass) => ass,
+            Types::Int(ass) => ass,
+            Types::Char(ass) => ass,
+            Types::Pointer(ass, _) => ass,
+            Types::Funct(ass, _) => ass,
+        }.clone()
+    }
+}
+
+impl PartialEq for Types {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Types::Undefined(_), Types::Undefined(_)) => true,
+            (Types::Int(_), Types::Int(_)) => true,
+            (Types::Char(_), Types::Char(_)) => true,
+            (Types::Pointer(_, type_self), Types::Pointer(_, type_other)) => type_self.eq(type_other),
+            (Types::Funct(_, sig_self), Types::Funct(_, sig_other)) => sig_self == sig_other,
+            _ => false,
+        }
+    }
 }
 
 const SIZES : [u8; 4] = [
@@ -30,6 +56,14 @@ impl SymbolPtr {
             is_local : true,
         }
 
+    }
+}
+
+impl Deref for SymbolPtr {
+    type Target = Symbol;
+
+    fn deref(&self) -> &Self::Target {
+        self.inner.deref()
     }
 }
 
@@ -133,7 +167,7 @@ impl SymbolTable {
     }
 
 
-    // Return a SymbolPtr pointing to the symbol currently mapped to the name (If it exists)
+    // Return a new SymbolPtr pointing to the symbol currently mapped to the name (If it exists)
     pub fn get_symbol(&self, name : &str) -> Option<SymbolPtr> {
         let mut new_ptr = self.mapping
             .iter()
