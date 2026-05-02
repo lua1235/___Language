@@ -1,0 +1,2 @@
+/usr/bin/ar qc libparser.a CMakeFiles/parser.dir/gen/underscore/UnderscoreBaseListener.cpp.o CMakeFiles/parser.dir/gen/underscore/UnderscoreBaseVisitor.cpp.o CMakeFiles/parser.dir/gen/underscore/UnderscoreLexer.cpp.o CMakeFiles/parser.dir/gen/underscore/UnderscoreListener.cpp.o CMakeFiles/parser.dir/gen/underscore/UnderscoreParser.cpp.o CMakeFiles/parser.dir/gen/underscore/UnderscoreVisitor.cpp.o
+/usr/bin/ranlib libparser.a

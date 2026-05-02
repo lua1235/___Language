@@ -1,0 +1,56 @@
+[
+{
+  "directory": "/home/austin/compilers/___Language/build",
+  "command": "/usr/bin/c++  -I/home/austin/compilers/llvm-project/mlir/include -I/home/austin/compilers/llvm-project/build/tools/mlir/include -I/home/austin/compilers/llvm-project/llvm/include -I/home/austin/compilers/llvm-project/build/include -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/misc -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/atn -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/dfa -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/tree -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/support -I/home/austin/compilers/___Language/include -I/home/austin/compilers/___Language/build/include  -Wall -std=gnu++17 -o CMakeFiles/parser.dir/gen/underscore/UnderscoreBaseListener.cpp.o -c /home/austin/compilers/___Language/gen/underscore/UnderscoreBaseListener.cpp",
+  "file": "/home/austin/compilers/___Language/gen/underscore/UnderscoreBaseListener.cpp",
+  "output": "CMakeFiles/parser.dir/gen/underscore/UnderscoreBaseListener.cpp.o"
+},
+{
+  "directory": "/home/austin/compilers/___Language/build",
+  "command": "/usr/bin/c++  -I/home/austin/compilers/llvm-project/mlir/include -I/home/austin/compilers/llvm-project/build/tools/mlir/include -I/home/austin/compilers/llvm-project/llvm/include -I/home/austin/compilers/llvm-project/build/include -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/misc -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/atn -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/dfa -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/tree -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/support -I/home/austin/compilers/___Language/include -I/home/austin/compilers/___Language/build/include  -Wall -std=gnu++17 -o CMakeFiles/parser.dir/gen/underscore/UnderscoreBaseVisitor.cpp.o -c /home/austin/compilers/___Language/gen/underscore/UnderscoreBaseVisitor.cpp",
+  "file": "/home/austin/compilers/___Language/gen/underscore/UnderscoreBaseVisitor.cpp",
+  "output": "CMakeFiles/parser.dir/gen/underscore/UnderscoreBaseVisitor.cpp.o"
+},
+{
+  "directory": "/home/austin/compilers/___Language/build",
+  "command": "/usr/bin/c++  -I/home/austin/compilers/llvm-project/mlir/include -I/home/austin/compilers/llvm-project/build/tools/mlir/include -I/home/austin/compilers/llvm-project/llvm/include -I/home/austin/compilers/llvm-project/build/include -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/misc -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/atn -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/dfa -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/tree -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/support -I/home/austin/compilers/___Language/include -I/home/austin/compilers/___Language/build/include  -Wall -std=gnu++17 -o CMakeFiles/parser.dir/gen/underscore/UnderscoreLexer.cpp.o -c /home/austin/compilers/___Language/gen/underscore/UnderscoreLexer.cpp",
+  "file": "/home/austin/compilers/___Language/gen/underscore/UnderscoreLexer.cpp",
+  "output": "CMakeFiles/parser.dir/gen/underscore/UnderscoreLexer.cpp.o"
+},
+{
+  "directory": "/home/austin/compilers/___Language/build",
+  "command": "/usr/bin/c++  -I/home/austin/compilers/llvm-project/mlir/include -I/home/austin/compilers/llvm-project/build/tools/mlir/include -I/home/austin/compilers/llvm-project/llvm/include -I/home/austin/compilers/llvm-project/build/include -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/misc -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/atn -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/dfa -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/tree -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/support -I/home/austin/compilers/___Language/include -I/home/austin/compilers/___Language/build/include  -Wall -std=gnu++17 -o CMakeFiles/parser.dir/gen/underscore/UnderscoreListener.cpp.o -c /home/austin/compilers/___Language/gen/underscore/UnderscoreListener.cpp",
+  "file": "/home/austin/compilers/___Language/gen/underscore/UnderscoreListener.cpp",
+  "output": "CMakeFiles/parser.dir/gen/underscore/UnderscoreListener.cpp.o"
+},
+{
+  "directory": "/home/austin/compilers/___Language/build",
+  "command": "/usr/bin/c++  -I/home/austin/compilers/llvm-project/mlir/include -I/home/austin/compilers/llvm-project/build/tools/mlir/include -I/home/austin/compilers/llvm-project/llvm/include -I/home/austin/compilers/llvm-project/build/include -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/misc -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/atn -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/dfa -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/tree -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/support -I/home/austin/compilers/___Language/include -I/home/austin/compilers/___Language/build/include  -Wall -std=gnu++17 -o CMakeFiles/parser.dir/gen/underscore/UnderscoreParser.cpp.o -c /home/austin/compilers/___Language/gen/underscore/UnderscoreParser.cpp",
+  "file": "/home/austin/compilers/___Language/gen/underscore/UnderscoreParser.cpp",
+  "output": "CMakeFiles/parser.dir/gen/underscore/UnderscoreParser.cpp.o"
+},
+{
+  "directory": "/home/austin/compilers/___Language/build",
+  "command": "/usr/bin/c++  -I/home/austin/compilers/llvm-project/mlir/include -I/home/austin/compilers/llvm-project/build/tools/mlir/include -I/home/austin/compilers/llvm-project/llvm/include -I/home/austin/compilers/llvm-project/build/include -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/misc -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/atn -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/dfa -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/tree -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/support -I/home/austin/compilers/___Language/include -I/home/austin/compilers/___Language/build/include  -Wall -std=gnu++17 -o CMakeFiles/parser.dir/gen/underscore/UnderscoreVisitor.cpp.o -c /home/austin/compilers/___Language/gen/underscore/UnderscoreVisitor.cpp",
+  "file": "/home/austin/compilers/___Language/gen/underscore/UnderscoreVisitor.cpp",
+  "output": "CMakeFiles/parser.dir/gen/underscore/UnderscoreVisitor.cpp.o"
+},
+{
+  "directory": "/home/austin/compilers/___Language/build/src",
+  "command": "/usr/bin/c++  -I/home/austin/compilers/llvm-project/mlir/include -I/home/austin/compilers/llvm-project/build/tools/mlir/include -I/home/austin/compilers/llvm-project/llvm/include -I/home/austin/compilers/llvm-project/build/include -I/home/austin/compilers/___Language/include -I/home/austin/compilers/___Language/build/include -I/home/austin/compilers/___Language/gen/underscore -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/misc -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/atn -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/dfa -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/tree -I/home/austin/compilers/antlr/antlr4-install/include/antlr4-runtime/support  -Wall -std=gnu++17 -o CMakeFiles/___c.dir/main.cpp.o -c /home/austin/compilers/___Language/src/main.cpp",
+  "file": "/home/austin/compilers/___Language/src/main.cpp",
+  "output": "src/CMakeFiles/___c.dir/main.cpp.o"
+},
+{
+  "directory": "/home/austin/compilers/___Language/build/runtime/src",
+  "command": "/usr/bin/c++ -D___rt_EXPORTS -I/home/austin/compilers/llvm-project/mlir/include -I/home/austin/compilers/llvm-project/build/tools/mlir/include -I/home/austin/compilers/llvm-project/llvm/include -I/home/austin/compilers/llvm-project/build/include -I/home/austin/compilers/___Language/include -I/home/austin/compilers/___Language/build/include -I/home/austin/compilers/___Language/runtime/include  -Wall -std=gnu++17 -fPIC -o CMakeFiles/___rt.dir/runtime.cpp.o -c /home/austin/compilers/___Language/runtime/src/runtime.cpp",
+  "file": "/home/austin/compilers/___Language/runtime/src/runtime.cpp",
+  "output": "runtime/src/CMakeFiles/___rt.dir/runtime.cpp.o"
+},
+{
+  "directory": "/home/austin/compilers/___Language/build/lib/dialect",
+  "command": "/usr/bin/c++ -DMyLangDialect_EXPORTS -I/home/austin/compilers/llvm-project/mlir/include -I/home/austin/compilers/llvm-project/build/tools/mlir/include -I/home/austin/compilers/llvm-project/llvm/include -I/home/austin/compilers/llvm-project/build/include -I/home/austin/compilers/___Language/include -I/home/austin/compilers/___Language/build/include -I/home/austin/compilers/___Language/build/lib  -Wall -std=gnu++17 -fPIC -o CMakeFiles/MyLangDialect.dir/UnderscoreDialect.cpp.o -c /home/austin/compilers/___Language/lib/dialect/UnderscoreDialect.cpp",
+  "file": "/home/austin/compilers/___Language/lib/dialect/UnderscoreDialect.cpp",
+  "output": "lib/dialect/CMakeFiles/MyLangDialect.dir/UnderscoreDialect.cpp.o"
+}
+]
