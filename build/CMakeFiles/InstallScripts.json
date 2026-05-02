@@ -1,0 +1,11 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/austin/compilers/___Language/build/cmake_install.cmake",
+		"/home/austin/compilers/___Language/build/src/cmake_install.cmake",
+		"/home/austin/compilers/___Language/build/runtime/cmake_install.cmake",
+		"/home/austin/compilers/___Language/build/runtime/src/cmake_install.cmake",
+		"/home/austin/compilers/___Language/build/lib/dialect/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC  -Wall -shared -Wl,--dependency-file=CMakeFiles/MyLangDialect.dir/link.d -Wl,-soname,libMyLangDialect.so -o libMyLangDialect.so CMakeFiles/MyLangDialect.dir/UnderscoreDialect.cpp.o

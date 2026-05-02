@@ -1,0 +1,1 @@
+/usr/bin/c++ -fPIC  -Wall -shared -Wl,--dependency-file=CMakeFiles/gazrt.dir/link.d -Wl,-soname,libgazrt.so -o libgazrt.so CMakeFiles/gazrt.dir/runtime.cpp.o
