@@ -24,12 +24,10 @@ An expression is "simple" if it is not a sequencing expression. Some operators r
 <pre>
 Expression:
     Paren_Expression
-    Prefix_Expression
-    Postfix_Expression
-    Infix_Expression
     If_Expression
     While_Expression
     Identifier
+    Decl_Expression
     Constant
 </pre>
 ## Parenthesis Expressions
@@ -52,34 +50,26 @@ While expressions will repeatedly check the value of the condition and evaluate 
 Break_Expression : <b>break</b> [Simple_Expression]
 </pre>
 Break expressions
-## Parentheses Expressions
+## Identifier Expressions and Variables
 <pre>
-Paren_Expression : <b>(</b>Expression<b>)</b>
+Identifier_Expression : identifier
 </pre>
-A parenthesis expression contains an inner expression and evaluates to the value of that expression. Empty parentheses evaluate to 0.
+Identifier expressions are a single identifier, which may or may not be bound to a value. Unbound identifiers may only appear as the operand of a Decl_Expression. Bound identifiers are referred to as variables.
 
+## Decl Expressions
+<pre>
+Decl_Expression : Type identifier
 </pre>
+Declaration Expressions bind an identifier to a default value of the specified Type. All primitive types have a well defined default value.
+
 # Operators
-Operators take a fixed number of operands and perform a computation, assignment, or declaration. An operator can be either prefix, infix, or postfix. Each operator has a left and right binding power, which determines evaluation order and associativity.   
+Operators take a fixed number of operands and perform a computation, assignment, or declaration. An operator can be either prefix, infix, or postfix.
 ```
 Operand : 
     Constant 
     Identifier 
     Expression
 ```
-Operator Binding Powers
-|LBP|Operator|Description|RBP|
-|---|--------|--------|---|
-|36|()|function operator||
-||int|type declaration prefix operators|34|
-|32|= += -= <br/> *= /=|assignment operators|4|
-|30|++ --|postfix inc/dec operators||
-||++ --|prefix inc/dec operators|28|
-|26|* /|infix mult/div operators|27|
-|24|+ -|infix add/sub operators|25|
-|20|< <= <br/> > >=|comparision operators|21|
-|18|== !=|equality operators|19|
-
 # The Assignment Operator and Scoping
 The right hand side expression of the assignment operator belongs to a new scope. A scope may read but not modify any variables in its enclosing scopes. This ensures that all changes to the value of a variable happen in the scope it exists in, improving code clarity.
 

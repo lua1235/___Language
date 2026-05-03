@@ -14,6 +14,7 @@ atom_expr // In descending order of precedence
     | atom_expr op=(PLUS|MINUS) atom_expr #addsub
     | atom_expr op=(GE|LE|GT|LT) atom_expr #cmp
     | atom_expr op=(EQ|NE) atom_expr #equality
+    | atom_expr op=()
     | 'if''('cond=expr')' atom_expr ('else' atom_expr)? #cond
     | 'while''('cond=expr')' atom_expr #while
     | 'break' (atom_expr)? #break
@@ -41,6 +42,9 @@ GE : '>=';
 LE : '<=';
 GT : '>';
 LT : '<';
+ASS : '=';
+ADDASS : '+=';
+SUBASS : '-=';
 NOT : 'not';
 AND : 'and';
 OR : 'or';
