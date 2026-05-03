@@ -1,23 +1,36 @@
 #pragma once
-// Nodes are forward declared to be made available for std::variant
-namespace ast {
-struct Sep; // The seperator simple_expression ; expression
 
-// Arithmetic expressions
-struct Id; // Identifiers
-struct IntLit; // Int Literals
-               
-struct Add;
-struct Sub; 
-struct Mul;
-struct Div;
+// Registry of ast node types. Categories are either disjoint or strict subsets. Add new nodes to the most granular possible category that still makes sense
 
-struct EQ;
-struct NE;
+// Basic categories
+#define LIT_EXPRS(X)        \
+    X(IntLit)
 
-struct GE;
-struct LE;
-struct GT;
-struct LT;
-struct Paren;
-}
+// BinExpr -> SimpleExpr Op SimpleExpr
+#define BIN_EXPRS(X)        \
+    X(Add)                  \
+    X(Sub)                  \
+    X(Mul)                  \
+    X(Div)                  \
+    X(EQ)                   \
+    X(NE)                   \
+    X(GE)                   \
+    X(LE)                   \
+    X(GT)                   \
+    X(LT)       
+
+#define UNARY_EXPRS(X)      \
+
+// Collect all simple exprs
+#define SIMPLE_EXPRS(X)     \
+    X(Id)                   \
+    X(Paren)                \
+    LIT_EXPRS(X)            \
+    BIN_EXPRS(X)            \
+    UNARY_EXPRS(X)          \
+
+// Collect all exprs
+#define EXPRS(X)            \
+    X(Sep)                  \
+    SIMPLE_EXPRS(X)
+
