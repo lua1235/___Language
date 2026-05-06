@@ -1,16 +1,11 @@
 # Introduction
-Specification of the ___ language. ___ is an expression-based programming language inspired by C. It is strongly typed and does not have a garbage collector.
+Specification of the ___ language. ___ is an expression-based programming language inspired by C. It is strongly typed.
 # Notation
 Syntactic components will be described in the form `component : definition`. Alternative definitions are provided on separate lines. Optional symbols will be surrounded by [] as follows `[optional]`. Literals and keywords will be **bolded**. For clarity, certain syntax components in a rule may be named as `name=Component`.
 # Lexical Elements
 TODO
-# Variables and Memory
-A variable holds a value of a specific type. Each variable belongs to the scope it is declared in and can only be modified within said scope. The only way to access the value stored by a variable is by using the identifier bound to that variable. An identifier may map to at most one variable in each scope.
-
-Values can also be stored in either stack or heap memory, and referred to through a pointer to that memory. 
 # Expressions
-Expressions are a valid sequence of operators and operands that represent some combination of computation, assignment, and declaration. Expressions always evaluate to a value. We classify expressions as sequence expressions and 
-simple expressions. A ___ program is a single expression, or an empty file.
+Expressions are a valid sequence of operators and operands that represent some combination of computation, assignment, and declaration. Expressions always evaluate to a value. We classify expressions as sequence expressions and simple expressions. A ___ program is a single expression, or an empty file.
 
 # The Sequence Expression
 A ___ program is a single expression. The semicolon, or sequencing operator, is a binary operator that guarantees the expression to its left is evaluated before the expression to its right. This is not necessarily the case for other binary expressions. The result of the sequencing operator is the result of the right hand side expression. The sequencing operator has the lowest precedence of all operators.
@@ -54,13 +49,22 @@ Break expressions
 <pre>
 Identifier_Expression : identifier
 </pre>
-Identifier expressions are a single identifier, which may or may not be bound to a value. Unbound identifiers may only appear as the operand of a Decl_Expression. Bound identifiers are referred to as variables.
+Identifier expressions are a single identifier, which may or may not be bound to a value. Unbound identifiers may only appear as the operand of a Decl_Expression. Bound identifiers are referred to as variables. An identifier expression with a bound identifier evaluates to the corresponding variable binding.
+
+## Variable Bindings
+A variable binding is a special value that represents the mapping between a value and a specific variable. Variable bindings will evaluate to the mapped value of the variable when used as operand to an operator that requires a concrete value. 
 
 ## Decl Expressions
 <pre>
-Decl_Expression : Type identifier
+Decl_Expression : Type Identifier_Expression
 </pre>
-Declaration Expressions bind an identifier to a default value of the specified Type. All primitive types have a well defined default value.
+Declaration Expressions bind an identifier to a default value of the specified Type. All primitive types have a well defined default value. Declaration expressions return a variable binding.
+
+## Assn Expressions
+<pre>
+Assn_Expression : lhs=Simple_Expression <b>=</b> rhs=Simple_Expression
+</pre>
+Assignment Expressions are a binary expression which requires the lhs to evaluate to a variable binding. The type of the rhs must be implicitly convertable to the type of the value mapped to by the variable binding returned by the rhs.
 
 # Operators
 Operators take a fixed number of operands and perform a computation, assignment, or declaration. An operator can be either prefix, infix, or postfix.

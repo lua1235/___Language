@@ -33,6 +33,15 @@ namespace ast {
     LIT_EXPRS(MAP)
 #undef MAP
 
+    // Generate Declaration expression nodes
+#define MAP(N) \
+    struct N : DeclExpr, Pos, RetType {\
+        N(std::shared_ptr<Id> name, size_t row, size_t col) :\
+            DeclExpr{nullptr, name}, Pos{row, col} {}\
+    };
+    DECL_EXPRS(MAP)
+#undef MAP
+
     // Generate Binary expression nodes
 #define MAP(N) \
     struct N : BinExpr, Pos, RetType {\

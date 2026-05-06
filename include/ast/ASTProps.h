@@ -16,6 +16,17 @@ namespace ast {
         std::shared_ptr<Type> type = nullptr;
     };
 
+    // Const expression value
+    template<typename T>
+    struct LitExpr {
+        const T value;
+    };
+
+    struct DeclExpr {
+        std::shared_ptr<Type> decl_type;
+        std::shared_ptr<Id> ident;
+    };
+
     // Binary expression operands
     struct BinExpr {
         SimpleExpression lhs, rhs;
@@ -26,9 +37,4 @@ namespace ast {
         SimpleExpression inner;
     };
 
-    // Const expression value
-    template<typename T>
-    struct LitExpr {
-        const T value;
-    };
 }
