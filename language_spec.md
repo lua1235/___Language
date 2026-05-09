@@ -134,7 +134,7 @@ Index expressions are checked at runtime unless the compiler can prove the index
 <pre>
 If_Expression : <b>if(</b>condition=Expression<b>)</b> if_body=Simple_Expression [<b>else</b> else_body=Simple_Expression]
 </pre>
-If expressions evaluate to the value of the if_body that follows ```if(BooleanExpression)``` if the condition evaluates to true. The value of the condition must be a boolean or implicitly convertible to a boolean. If the condition evaluates to false, it evaluates to the else_body, or void if not present. Both the true branch and the false branch must evaluate to the same type. 
+If expressions evaluate to the value of the `if_body` that follows `if(BooleanExpression)` if the condition evaluates to true. The value of the condition must be a boolean or implicitly convertible to a boolean. If the condition evaluates to false, it evaluates to the `else_body`, or void if not present. Both the true branch and the false branch must evaluate to the same type. 
 ## While Expressions
 <pre>
 While_Expression : <b>while(</b>condition=Expression<b>)</b> body=Simple_Expression
@@ -149,7 +149,7 @@ Break expressions
 <pre>
 Identifier_Expression : identifier
 </pre>
-Identifier expressions are a single identifier, which may or may not be bound to a value. Unbound identifiers may only appear as the operand of a Decl_Expression. Bound identifiers are referred to as variables. An identifier expression with a bound identifier evaluates to the corresponding variable binding.
+Identifier expressions are a single identifier, which may or may not be bound to a value. Unbound identifiers may only appear as the operand of a `Decl_Expression`. Bound identifiers are referred to as variables. An identifier expression with a bound identifier evaluates to the corresponding variable binding.
 
 ## Variable Bindings
 A variable binding is a special value that represents the mapping between a value and a specific variable. Variable bindings will evaluate to the mapped value of the variable when used as operand to an operator that requires a concrete value. 
@@ -158,7 +158,7 @@ A variable binding is a special value that represents the mapping between a valu
 <pre>
 Decl_Expression : Type Identifier_Expression
 </pre>
-Declaration Expressions bind an unbound identifier to the default value of the specified Type. All primitive types have a well defined default value. Declaration expressions return a variable binding.
+Declaration Expressions bind an unbound identifier to the default value of the specified `Type`. All primitive types have a well defined default value. Declaration expressions return a variable binding.
 
 Declaration has higher precedence than assignment. Therefore `i32 x = 10` is parsed as `(i32 x) = 10`: the declaration expression first creates a variable binding initialized to the declared type's default value, and the assignment expression then updates that binding.
 
@@ -166,11 +166,11 @@ Declaration has higher precedence than assignment. Therefore `i32 x = 10` is par
 <pre>
 Assn_Expression : lhs=Simple_Expression <b>=</b> rhs=Simple_Expression
 </pre>
-Assignment Expressions are a binary expression which requires the lhs to evaluate to a variable binding. The type of the rhs must be implicitly convertable to the type of the value mapped to by the variable binding returned by the lhs.
+Assignment Expressions are a binary expression which requires the `lhs` to evaluate to a variable binding. The type of the `rhs` must be implicitly convertable to the type of the value mapped to by the variable binding returned by the `lhs`.
 
 ## Parameterized Index Assignment
 
-A parameterized index assignment is an assignment expression whose lhs contains one or more unbound identifiers in tensor index positions. Each such identifier becomes an index parameter for the assignment.
+A parameterized index assignment is an assignment expression whose `lhs` contains one or more unbound identifiers in tensor index positions. Each such identifier becomes an index parameter for the assignment.
 
 <pre>
 Parameterized_Index_Assignment :
@@ -180,7 +180,7 @@ Parameterized_Index_Assignment :
 
 For each index parameter, the assignment is evaluated once for every value in that parameter's inferred domain. The parameter is bound only within the parameterized assignment expression and has type `u64`.
 
-The domain of an index parameter is inferred from the tensor dimensions where it appears in the lhs. For a parameter that appears in one dimension of size `N`, the parameter ranges from `0` to `N - 1`. If the same parameter appears in multiple lhs index positions, its domain is the intersection of those dimensions, equivalent to ranging from `0` to `min(N0, N1, ...) - 1`.
+The domain of an index parameter is inferred from the tensor dimensions where it appears in the `lhs`. For a parameter that appears in one dimension of size `N`, the parameter ranges from `0` to `N - 1`. If the same parameter appears in multiple `lhs` index positions, its domain is the intersection of those dimensions, equivalent to ranging from `0` to `min(N0, N1, ...) - 1`.
 
 Examples:
 
@@ -192,11 +192,11 @@ i32[4][4] A;
 A[i][i] = 1;     // assigns the diagonal
 ```
 
-Parameterized assignments are evaluated in row-major order. Parameters introduced by earlier lhs indexes are outer loop parameters, and parameters introduced by later lhs indexes are inner loop parameters. For `A[i][j] = rhs`, all `j` values are evaluated for a fixed `i` before moving to the next `i`.
+Parameterized assignments are evaluated in row-major order. Parameters introduced by earlier `lhs` indexes are outer loop parameters, and parameters introduced by later `lhs` indexes are inner loop parameters. For `A[i][j] = rhs`, all `j` values are evaluated for a fixed `i` before moving to the next `i`.
 
 The compiler may reorder, vectorize, or parallelize a parameterized assignment only when it can prove that the observable result is unchanged.
 
-Compound parameterized assignment is equivalent to applying the compound operation at each selected element in row-major order, with the lhs element evaluated only once per parameter combination.
+Compound parameterized assignment is equivalent to applying the compound operation at each selected element in row-major order, with the `lhs` element evaluated only once per parameter combination.
 
 ```___
 i32[4] w;
