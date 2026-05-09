@@ -1,5 +1,7 @@
 # Introduction
 Specification of the ___ language. ___ is an expression-based programming language inspired by C. It is strongly typed.
+
+This document describes the intended language. The current compiler implementation may support only a subset of this specification.
 # Notation
 Syntactic components will be described in the form `component : definition`. Alternative definitions are provided on separate lines. Optional symbols will be surrounded by [] as follows `[optional]`. Literals and keywords will be **bolded**. For clarity, certain syntax components in a rule may be named as `name=Component`.
 # Lexical Elements
@@ -34,7 +36,7 @@ Scalar_Type :
 
 `char` is an alias for `i8`. It represents an 8-bit integer value and may be written using character literals.
 
-Signed integer types are `i8`, `i16`, `i32`, and `i64`. Unsigned integer types are `u8`, `u16`, `u32`, and `u64`. Unless otherwise stated, integer arithmetic is performed in the operand type after the usual implicit conversions have been applied.
+Signed integer types are `i8`, `i16`, `i32`, and `i64`. Unsigned integer types are `u8`, `u16`, `u32`, and `u64`. Unless otherwise stated, integer arithmetic is performed in the result type selected by the arithmetic conversion rules.
 
 Floating-point types are `f16`, `f32`, and `f64`.
 
@@ -59,14 +61,27 @@ Implicit conversions:
 | From | To | Notes |
 | --- | --- | --- |
 | signed integer | wider signed integer | preserves the value |
+| signed integer | narrower signed integer | truncates to the destination bit width |
+| signed integer | unsigned integer | truncates to the destination bit width |
 | unsigned integer | wider unsigned integer | preserves the value |
-| unsigned integer | signed integer with greater width | preserves the value |
+| unsigned integer | narrower unsigned integer | truncates to the destination bit width |
+| unsigned integer | wider signed integer | preserves the value |
+| unsigned integer | narrower signed integer | truncates to the destination bit width |
 | integer | floating-point | converts to the nearest representable value |
 | `char`/`i8` | wider signed integer | follows signed integer widening rules |
 | `char`/`i8` | floating-point | converts to the nearest representable value |
 | scalar | `bool` | allowed only in conditions, where zero is false and nonzero is true |
 
-Narrowing conversions, conversions from signed integers to unsigned integers, conversions from unsigned integers to signed integers of the same width, floating-point to integer conversions, and conversions between unrelated tensor types are not implicit.
+For conversions to a signed integer type, the resulting bit pattern is interpreted as a two's-complement signed value.
+
+Conversions from floating-point types to integer types are not implicit.
+
+Tensor types may convert to another tensor type with the same rank and equal dimension values if each element is implicitly convertible to the destination element type. Shape equality is checked statically when possible and at runtime otherwise. Tensor conversion is applied elementwise.
+
+## Arithmetic Conversions
+Binary integer arithmetic is performed in the wider operand type. If both integer operands have the same width and one is signed while the other is unsigned, arithmetic is performed in the unsigned type of that width.
+
+Binary arithmetic between an integer and a floating-point value is performed in the floating-point operand type. Binary arithmetic between two floating-point values is performed in the wider floating-point type.
 
 ## Tensor Types
 <pre>
@@ -74,7 +89,7 @@ Tensor_Type :
     Scalar_Type (<b>[</b>size=Simple_Expression<b>]</b>)+
 </pre>
 
-A tensor type describes a fixed-size contiguous sequence of elements. The base type must be a scalar type. Each size expression must be an integer constant expression greater than zero.
+A tensor type describes a fixed-size contiguous sequence of elements. The base type must be a scalar type. Each size expression must evaluate to an integer greater than zero. Tensor size expressions are evaluated when the tensor is created, and the tensor's shape is fixed after creation.
 
 Examples:
 
@@ -120,7 +135,7 @@ Index_Expression : target=Simple_Expression <b>[</b>index=Simple_Expression<b>]<
 
 Index expressions access one element of a tensor value. The target expression must be of tensor type `T[N]`, and the index expression must evaluate to an integer that is implicitly convertible to `u64`. The index value is converted to `u64` before indexing. The result has type `T`.
 
-Indexing a value of type `T[N]` produces a variable binding of type `T` when the target expression is assignable, and a value of type `T` otherwise.
+Indexing a value of type `T[N]` produces a variable binding of type `T` when the target expression evaluates to a variable binding, and a value of type `T` otherwise.
 
 ```___
 i32[4] u;
@@ -134,17 +149,17 @@ Index expressions are checked at runtime unless the compiler can prove the index
 <pre>
 If_Expression : <b>if(</b>condition=Expression<b>)</b> if_body=Simple_Expression [<b>else</b> else_body=Simple_Expression]
 </pre>
-If expressions evaluate to the value of the `if_body` that follows `if(BooleanExpression)` if the condition evaluates to true. The value of the condition must be a boolean or implicitly convertible to a boolean. If the condition evaluates to false, it evaluates to the `else_body`, or void if not present. Both the true branch and the false branch must evaluate to the same type. 
+If expressions evaluate to the value of the `if_body` that follows `if(BooleanExpression)` if the condition evaluates to true. The value of the condition must be a boolean or implicitly convertible to a boolean. If an `else_body` is present and the condition evaluates to false, the if expression evaluates to the `else_body`. When an `else_body` is present, both branches must evaluate to the same type. When an `else_body` is not present, the `if_body` must evaluate to `void` and the if expression has type `void`.
 ## While Expressions
 <pre>
 While_Expression : <b>while(</b>condition=Expression<b>)</b> body=Simple_Expression
 </pre>
-While expressions will repeatedly check the value of the condition and evaluate the body if the condition is true. The while expression terminates and returns the value of the last iteration of the body if the condition is false. 
+While expressions repeatedly check the value of the condition and evaluate the body if the condition is true. The value of the condition must be a boolean or implicitly convertible to a boolean. A while expression has the same type as its body. If the condition becomes false after one or more iterations, the while expression evaluates to the value of the last body evaluation. If the condition is false before the first iteration, the while expression evaluates to the default value of the body type.
 ## Break Expressions
 <pre>
 Break_Expression : <b>break</b> [Simple_Expression]
 </pre>
-Break expressions
+Break expressions are valid only within the body of a `while` expression, including expressions nested inside that body. A break expression exits the innermost enclosing `while`. If the break expression has an operand, the operand type must match the enclosing while body type. The while expression evaluates to that operand value. A bare `break` exits with the default value of the enclosing while body type.
 ## Identifier Expressions and Variables
 <pre>
 Identifier_Expression : identifier
@@ -166,7 +181,7 @@ Declaration has higher precedence than assignment. Therefore `i32 x = 10` is par
 <pre>
 Assn_Expression : lhs=Simple_Expression <b>=</b> rhs=Simple_Expression
 </pre>
-Assignment Expressions are a binary expression which requires the `lhs` to evaluate to a variable binding. The type of the `rhs` must be implicitly convertable to the type of the value mapped to by the variable binding returned by the `lhs`.
+Assignment Expressions are a binary expression which requires the `lhs` to evaluate to a variable binding. The type of the `rhs` must be implicitly convertible to the type of the value mapped to by the variable binding returned by the `lhs`. An assignment expression evaluates to the updated `lhs` variable binding.
 
 ## Parameterized Index Assignment
 
@@ -176,6 +191,15 @@ A parameterized index assignment is an assignment expression whose `lhs` contain
 Parameterized_Index_Assignment :
     lhs=Parameterized_Index_Expression <b>=</b> rhs=Simple_Expression
     lhs=Parameterized_Index_Expression Compound_Assn_Operator rhs=Simple_Expression
+
+Parameterized_Index_Expression :
+    Simple_Expression
+
+Compound_Assn_Operator :
+    <b>+=</b>
+    <b>-=</b>
+    <b>*=</b>
+    <b>/=</b>
 </pre>
 
 For each index parameter, the assignment is evaluated once for every value in that parameter's inferred domain. The parameter is bound only within the parameterized assignment expression and has type `u64`.
@@ -188,15 +212,14 @@ Examples:
 i32[4] v;
 v[i] = i;       // assigns v[0] = 0, v[1] = 1, v[2] = 2, v[3] = 3
 
-i32[4][4] A;
-A[i][i] = 1;     // assigns the diagonal
+i32[4][4] A[i][i] = 1;     // assigns the diagonal. None-diagonal elements are bound to default values
 ```
 
-Parameterized assignments are evaluated in row-major order. Parameters introduced by earlier `lhs` indexes are outer loop parameters, and parameters introduced by later `lhs` indexes are inner loop parameters. For `A[i][j] = rhs`, all `j` values are evaluated for a fixed `i` before moving to the next `i`.
+Parameterized assignments are evaluated in row-major order. Parameters introduced by earlier `lhs` indexes are outer loop parameters, and parameters introduced by later `lhs` indexes are inner loop parameters. If a parameter appears more than once, its loop position is determined by its first occurrence in a left-to-right traversal of `lhs` index expressions. For `A[i][j] = rhs`, all `j` values are evaluated for a fixed `i` before moving to the next `i`.
 
 The compiler may reorder, vectorize, or parallelize a parameterized assignment only when it can prove that the observable result is unchanged.
 
-Compound parameterized assignment is equivalent to applying the compound operation at each selected element in row-major order, with the `lhs` element evaluated only once per parameter combination.
+Compound parameterized assignment is equivalent to applying the compound operation at each selected element in row-major order, with the `lhs` element evaluated only once per parameter combination. A compound assignment expression evaluates to the updated `lhs` variable binding.
 
 ```___
 i32[4] w;
