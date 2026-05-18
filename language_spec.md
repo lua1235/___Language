@@ -89,7 +89,7 @@ Tensor_Type :
     Scalar_Type (<b>[</b>size=Simple_Expression<b>]</b>)+
 </pre>
 
-A tensor type describes a fixed-size contiguous sequence of elements. The base type must be a scalar type. Each size expression must evaluate to an integer greater than zero. Tensor size expressions are evaluated when the tensor is created, and the tensor's shape is fixed after creation.
+A tensor type describes a fixed-size contiguous sequence of elements. The base type must be a scalar type. Each size expression must evaluate to a non-negative integer. Tensor size expressions are evaluated when the tensor is created, and the tensor's shape is fixed after creation.
 
 Examples:
 
@@ -100,6 +100,23 @@ char[12]     // fixed-size character buffer
 ```
 
 The type `T[N]` has `N` elements of type `T`. The type `T[M][N]` has `M` elements of type `T[N]`.
+
+## Function Types
+<pre>
+Function_Type :
+    Type <b>(</b>Type_List?<b>)</b>
+
+Type_List :
+    Type
+    Type <b>,</b> Type_List
+
+Function types of the form T(S1, ... SN) denote a value of type T which depends on N other values of types S1...SN respectively. Function types are classified as scalar types, even if the type T is a Tensor. A value of type T(S1, ... SN) is called a T-valued function
+
+```___
+i32(i32, i32) // function which returns i32 and depends on two other i32s
+i32[10](i8) // tensor of ten i32s which depends on an i8
+f16[10](i8)[5][5] // 5-by-5 tensor of functio 
+```
 
 # Expressions
 Expressions are a valid sequence of operators and operands that represent some combination of computation, assignment, and declaration. Expressions always evaluate to a value. We classify expressions as sequence expressions and simple expressions. A ___ program is a single expression, or an empty file.
@@ -125,7 +142,8 @@ Expression:
 </pre>
 ## Parenthesis Expressions
 <pre>
-Paren_Expression : (Expression)
+Paren_Expression : 
+    (Expression)
 </pre>
 Parenthesis expressions have the highest precedence, and evaluate to the value of the inner expression.
 ## Index Expressions
@@ -147,17 +165,20 @@ Index expressions are checked at runtime unless the compiler can prove the index
 
 ## If Expressions
 <pre>
-If_Expression : <b>if(</b>condition=Expression<b>)</b> if_body=Simple_Expression [<b>else</b> else_body=Simple_Expression]
+If_Expression : 
+    <b>if(</b>condition=Expression<b>)</b> if_body=Simple_Expression [<b>else</b> else_body=Simple_Expression]
 </pre>
 If expressions evaluate to the value of the `if_body` that follows `if(BooleanExpression)` if the condition evaluates to true. The value of the condition must be a boolean or implicitly convertible to a boolean. If an `else_body` is present and the condition evaluates to false, the if expression evaluates to the `else_body`. When an `else_body` is present, both branches must evaluate to the same type. When an `else_body` is not present, the `if_body` must evaluate to `void` and the if expression has type `void`.
 ## While Expressions
 <pre>
-While_Expression : <b>while(</b>condition=Expression<b>)</b> body=Simple_Expression
+While_Expression : 
+    <b>while(</b>condition=Expression<b>)</b> body=Simple_Expression
 </pre>
 While expressions repeatedly check the value of the condition and evaluate the body if the condition is true. The value of the condition must be a boolean or implicitly convertible to a boolean. A while expression has the same type as its body. If the condition becomes false after one or more iterations, the while expression evaluates to the value of the last body evaluation. If the condition is false before the first iteration, the while expression evaluates to the default value of the body type.
 ## Break Expressions
 <pre>
-Break_Expression : <b>break</b> [Simple_Expression]
+Break_Expression : 
+    <b>break</b> [Simple_Expression]
 </pre>
 Break expressions are valid only within the body of a `while` expression, including expressions nested inside that body. A break expression exits the innermost enclosing `while`. If the break expression has an operand, the operand type must match the enclosing while body type. The while expression evaluates to that operand value. A bare `break` exits with the default value of the enclosing while body type.
 ## Identifier Expressions and Variables
@@ -171,7 +192,8 @@ A variable binding is a special value that represents the mapping between a valu
 
 ## Decl Expressions
 <pre>
-Decl_Expression : Type Identifier_Expression
+Decl_Expression : 
+    Type Identifier_Expression
 </pre>
 Declaration Expressions bind an unbound identifier to the default value of the specified `Type`. All primitive types have a well defined default value. Declaration expressions return a variable binding.
 
@@ -179,7 +201,8 @@ Declaration has higher precedence than assignment. Therefore `i32 x = 10` is par
 
 ## Assn Expressions
 <pre>
-Assn_Expression : lhs=Simple_Expression <b>=</b> rhs=Simple_Expression
+Assn_Expression : 
+    lhs=Simple_Expression <b>=</b> rhs=Simple_Expression
 </pre>
 Assignment Expressions are a binary expression which requires the `lhs` to evaluate to a variable binding. The type of the `rhs` must be implicitly convertible to the type of the value mapped to by the variable binding returned by the `lhs`. An assignment expression evaluates to the updated `lhs` variable binding.
 
@@ -211,6 +234,12 @@ Examples:
 ```___
 i32[4] v;
 v[i] = i;       // assigns v[0] = 0, v[1] = 1, v[2] = 2, v[3] = 3
+
+i32[50] fib[i] = // Generate first 50 elements of fibonacci sequence using DP
+    if(i <= 1) 
+        i 
+    else 
+        fib[i-1] + fib[i-2];
 
 i32[4][4] A[i][i] = 1;     // assigns the diagonal. None-diagonal elements are bound to default values
 ```
